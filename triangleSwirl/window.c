@@ -14,7 +14,7 @@ static void draw(void) {
 int main(int argc, char ** argv) {
 
   if(!gl4duwCreateWindow(argc, argv,
-			 "1.3_spiral",
+			 "triangleSwirl",
 			 10, 10, 640, 480,
 			 GL4DW_SHOWN)) {
     return 1;
