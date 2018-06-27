@@ -1,7 +1,3 @@
-#  Makefile 
-#  Auteur : Farès BELHADJ
-#  Email  : amsi@ai.univ-paris8.fr
-#  Date   : 04/02/2018
 # définition des commandes utilisées
 CC = gcc
 ECHO = echo
