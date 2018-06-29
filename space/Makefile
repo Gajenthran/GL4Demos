@@ -13,7 +13,7 @@ CPPFLAGS = -I.
 LDFLAGS = -lm -lSDL2_image -lSDL2_ttf -lfftw3
 
 # définition des fichiers et dossiers
-PROGNAME = samples
+PROGNAME = space
 VERSION = 1.0
 distdir = $(PROGNAME)-$(VERSION)
 HEADERS = space.h
