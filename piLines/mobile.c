@@ -10,14 +10,6 @@ static int _idx = 0;
 static GLuint _red = RGB(200, 48, 32);
 static GLuint _blue = RGB(98, 166, 240);
 
-static float myRand(float max) {
-  float rand = gl4dmURand() * max;
-  float sgn = gl4dmURand() * 2.0;
-  sgn = sgn > 1.0 ? 1.0 : -1.0;
-  rand *= sgn;
-  return rand;
-}
-
 void mobileInit(void) {
   GLubyte r, g, b;
   _mobile.x = gl4dpGetWidth()/2;
