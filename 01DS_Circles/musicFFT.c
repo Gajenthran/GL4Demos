@@ -47,9 +47,12 @@ static void init(int w, int h) {
 }
 
 static void drawPixelWithThickness(int x, int y, int t) {
-  gl4dpPutPixel(x+1, y+1);
-  gl4dpPutPixel(x, y);
-  gl4dpPutPixel(x-1, y-1);
+  int i;
+  for(i = 0; i < t; i++) {
+    gl4dpPutPixel(x+i, y+i);
+    gl4dpPutPixel(x, y);
+    gl4dpPutPixel(x-i, y-i);
+  }
 }
 
 static void draw(void) {

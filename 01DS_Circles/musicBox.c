@@ -59,7 +59,6 @@ enum texture_s {
 
 static GLuint _tId[NB_TEXTURES] = {0};
 
-
 static float myRand(float max) {
   float rand = gl4dmURand() * max;
   float sgn = gl4dmURand() * 2.0;
@@ -139,7 +138,6 @@ static void draw(void) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _tId[id]);
     gl4duPushMatrix(); { 
-      //gl4duRotatef(-a0, 0, -1, 0); 
       gl4duTranslatef(_sph_att[i * 2 + 0], _sph_att[i * 2 + 1], 0);  
       GLfloat sc = gl4dmURand() * 0.015;
       gl4duScalef(sc, sc, sc);
