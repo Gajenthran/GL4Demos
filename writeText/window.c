@@ -66,8 +66,6 @@ static void init(void) {
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
   resize(_wW, _wH);
   _quad = gl4dgGenQuadf();
-  /* initText(&_textTexId, 
-     "Totoooooooooooop\nddqsjofjqso"); */
 }
 
 static void keyup(int keycode) {
@@ -84,6 +82,9 @@ static void keydown(int keycode) {
       break;
     case SDLK_RETURN:
       _letter = '\n';
+      break;
+    case SDLK_SPACE:
+      _letter = ' ';
       break;
     case SDLK_BACKSPACE:
       _delete = 1;
