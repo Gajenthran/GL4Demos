@@ -6,6 +6,7 @@
  * \date March 05 2018
  */
 #include <GL4D/gl4dg.h>
+#include <math.h>
 #include <GL4D/gl4dp.h>
 #include <GL4D/gl4duw_SDL2.h>
 
@@ -17,6 +18,8 @@ static void idle(void);
 static void keydown(int keycode);
 static void keyup(int keycode);
 static void pmotion(int x, int y);
+static int  collision(GLfloat, GLfloat);
+static void spawnItem(void);
 static void draw(void);
 
 /* from makeLabyrinth.c */
@@ -38,8 +41,12 @@ static GLuint _cube = 0;
 static GLuint _pId = 0;
 /*!\brief plane texture Id */
 static GLuint _planeTexId = 0;
+/*!\brief wall texture Id */
+static GLuint _wallTexId = 0;
 /*!\brief compass texture Id */
 static GLuint _compassTexId = 0;
+/*!\brief item texture Id */
+static GLuint _itemTexId = 0;
 /*!\brief plane scale factor */
 static GLfloat _planeScale = 100.0f;
 /*!\brief boolean to toggle anisotropic filtering */
@@ -55,6 +62,12 @@ enum kyes_t {
   KDOWN
 };
 
+enum typecell {
+  ROAD = 0,
+  WALL = -1,
+  ITEM = 1
+};
+
 /*!\brief virtual keyboard for direction commands */
 static GLuint _keys[] = {0, 0, 0, 0};
 
@@ -66,9 +79,16 @@ struct cam_t {
   GLfloat theta;
 };
 
+typedef struct item_t item_t;
+struct item_t {
+  GLfloat x, z, w, h;
+  // GLfloat bbox;
+};
+
 /*!\brief the used camera */
 static cam_t _cam = {0, 0, 0};
-
+static GLfloat _bbox = 5.0f;
+static item_t _item = {0, 0};
 
 /*!\brief creates the window, initializes OpenGL parameters,
  * initializes data and maps callback functions */
@@ -116,6 +136,8 @@ static void initGL(void) {
 static void initData(void) {
   /* a red-white texture used to draw a compass */
   GLuint northsouth[] = {(255 << 24) + 255, -1};
+  GLuint wall[] = {-1};
+  GLuint itemTex[] = {(255 << 24) + 255};
   /* generates a quad using GL4Dummies */
    _plane = gl4dgGenQuadf();
   /* generates a cube using GL4Dummies */
@@ -140,6 +162,25 @@ static void initData(void) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, northsouth);
 
+  /* creation and parametrization of the wall texture */
+  glGenTextures(1, &_wallTexId);
+  glBindTexture(GL_TEXTURE_2D, _wallTexId);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, wall);
+
+  /* creation and parametrization of the item texture */
+  glGenTextures(1, &_itemTexId);
+  glBindTexture(GL_TEXTURE_2D, _itemTexId);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, itemTex);
+
+  spawnItem();
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -164,7 +205,7 @@ static void resize(int w, int h) {
 static void updatePosition(void) {
   GLfloat xf, zf;
   static int xi = -1, zi = -1;
-  /* translate to lower-left */
+  /* translate to middle */
   xf = _cam.x + _planeScale;
   zf = -_cam.z + _planeScale;
   /* scale to 1.0 x 1.0 */
@@ -174,11 +215,23 @@ static void updatePosition(void) {
   xf = xf * _lab_side;
   zf = zf * _lab_side;
   /* re-set previous position to black and the new one to red */
-  if((int)xf != xi || (int)zf != zi) {
+  xi = (int)xf;
+  zi = (int)zf;
+  if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side) {
+    GLfloat dx = xf - _item.x;
+    GLfloat dz = zf - _item.z;
+    double dist = sqrt(dx * dx + dz * dz);
+    if(_labyrinth[zi * _lab_side + xi] == 2 && dist < 0.1f) {
+      _labyrinth[zi * _lab_side + xi] = 0;
+      glBindTexture(GL_TEXTURE_2D, _planeTexId);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _lab_side, _lab_side, 0, GL_RGBA, GL_UNSIGNED_BYTE, _labyrinth);
+      spawnItem();  
+    }
+  }
+  /* if((int)xf != xi || (int)zf != zi) {
     if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side && _labyrinth[zi * _lab_side + xi] != -1) {
       _labyrinth[zi * _lab_side + xi] = 0;
       glBindTexture(GL_TEXTURE_2D, _planeTexId);
-      /* try to use the glTexSubImage2D function instead of the glTexImage2D function */
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _lab_side, _lab_side, 0, GL_RGBA, GL_UNSIGNED_BYTE, _labyrinth);
     }
     xi = (int)xf;
@@ -186,30 +239,44 @@ static void updatePosition(void) {
     if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side && _labyrinth[zi * _lab_side + xi] != -1) {
       _labyrinth[zi * _lab_side + xi] = RGB(255, 0, 0);
       glBindTexture(GL_TEXTURE_2D, _planeTexId);
-      /* try to use the glTexSubImage2D function instead of the glTexImage2D function */
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _lab_side, _lab_side, 0, GL_RGBA, GL_UNSIGNED_BYTE, _labyrinth);
     }
-  }
+  } */
 }
 
-static int collision(void) {
+static void spawnItem(void) {
+  GLfloat x, z;
+  do {
+    x = gl4dmURand() * _lab_side;
+    z = gl4dmURand() * _lab_side;
+  } while(_labyrinth[(int)z * _lab_side + (int)x] == -1);
+  _item.x = x; 
+  _item.z = z;
+  _item.w = _item.h = 1.0;
+  _labyrinth[(int)z * _lab_side + (int)x] = 2;
+}
+
+static int collision(GLfloat nextx, GLfloat nextz) {
   GLfloat xf, zf;
-  int xi = -1, zi = -1;
-
-  xf = _cam.x + _planeScale;
-  zf = -_cam.z + _planeScale;
-
+  static int xi = -1, zi = -1;
+  /* translate to lower-left */
+  xf = _cam.x + _planeScale + nextx;
+  zf = -_cam.z + _planeScale + nextz;
+  /* scale to 1.0 x 1.0 */
   xf = xf / (2.0f * _planeScale);
   zf = zf / (2.0f * _planeScale);
-
+  /* rescale to _lab_side x _lab_side */
   xf = xf * _lab_side;
   zf = zf * _lab_side;
-  
-  xi = (int)xf;
-  zi = (int)zf;   
 
-  if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side && _labyrinth[zi * _lab_side + xi] == -1)
+  if((int)xf != xi || (int)zf != zi) {
+    xi = (int)xf;
+    zi = (int)zf;
+  } 
+
+  if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side && _labyrinth[zi * _lab_side + xi] == -1) {
     return 1;
+  }
 
   return 0;
 }
@@ -220,7 +287,9 @@ static int collision(void) {
  * direction, orientation and time (dt = delta-time)
  */
 static void idle(void) {
-  double dt, dtheta = M_PI, step = 40.0;
+  int col = -1;
+  double dt, dtheta = M_PI, step = 20.0;
+  GLfloat x, z;
   static double t0 = 0, t;
   dt = ((t = gl4dGetElapsedTime()) - t0) / 1000.0;
   t0 = t;
@@ -229,15 +298,19 @@ static void idle(void) {
   if(_keys[KRIGHT])
     _cam.theta -= dt * dtheta;
   if(_keys[KUP]) {
-    if(!collision()) {
-      _cam.x += -dt * step * sin(_cam.theta);
-      _cam.z += -dt * step * cos(_cam.theta);
+    _cam.x += -dt * step * sin(_cam.theta);
+    _cam.z += -dt * step * cos(_cam.theta);
+    if(collision(_bbox * -sin(_cam.theta), _bbox * cos(_cam.theta))) {
+      _cam.x -= -dt * step * sin(_cam.theta);
+      _cam.z -= -dt * step * cos(_cam.theta);
     }
   }
   if(_keys[KDOWN]) {
-    if(!collision()) {
-      _cam.x += dt * step * sin(_cam.theta);
-      _cam.z += dt * step * cos(_cam.theta);
+    _cam.x += dt * step * sin(_cam.theta);
+    _cam.z += dt * step * cos(_cam.theta);
+    if(collision(_bbox * sin(_cam.theta), _bbox * -cos(_cam.theta))) {
+      _cam.x -= dt * step * sin(_cam.theta);
+      _cam.z -= dt * step * cos(_cam.theta);
     }
   }
   updatePosition();
@@ -350,8 +423,8 @@ static void draw(void) {
   /* modifies the current matrix to simulate camera position and orientation in the scene */
   /* see gl4duLookAtf documentation or gluLookAt documentation */
   gl4duLookAtf(_cam.x, 3.0, _cam.z, 
-	       _cam.x - sin(_cam.theta), 3.0 - (_ym - (_wH >> 1)) / (GLfloat)_wH, _cam.z - cos(_cam.theta), 
-	       0.0, 1.0,0.0);
+         _cam.x - sin(_cam.theta), 3.0 - (_ym - (_wH >> 1)) / (GLfloat)_wH, _cam.z - cos(_cam.theta), 
+         0.0, 1.0,0.0);
   gl4duBindMatrix("modelMatrix");
   /* loads the identity matrix in the current GL4Dummies matrix ("modelMatrix") */
   gl4duLoadIdentityf();
@@ -383,23 +456,32 @@ static void draw(void) {
     for(j = 0; j < _lab_side; j++) {
       if(_labyrinth[(_lab_side - 1 - j) * _lab_side + i] == -1) {
         int xi = i - _lab_side/2, zi = j - _lab_side/2;
-        // printf("xi : %d -- zi : %d\n", xi, zi);
         gl4duPushMatrix(); {
           gl4duTranslatef(xi * res, sc, zi * res);
           gl4duScalef(sc, sc, sc);
           gl4duSendMatrices();
         } gl4duPopMatrix();
 
-        /* culls the back faces */
         glCullFace(GL_BACK);
-        glBindTexture(GL_TEXTURE_2D, _planeTexId);
-        /* sets in pId the uniform variable texRepeat to the plane scale */
-        glUniform1f(glGetUniformLocation(_pId, "texRepeat"), 1.0);
-        /* draws the plane */
+        glUniform1i(glGetUniformLocation(_pId, "border"), 1);
+        glBindTexture(GL_TEXTURE_2D, _wallTexId);
+        gl4dgDraw(_cube);
+        glUniform1i(glGetUniformLocation(_pId, "border"), 0);
+      }
+
+      if(_labyrinth[(_lab_side - 1 - j) * _lab_side + i] == 2) {
+        int xi = i - _lab_side/2, zi = j - _lab_side/2;
+        gl4duPushMatrix(); {
+          gl4duTranslatef(xi * res, 1, zi * res);
+          gl4duScalef(_item.w, 100, _item.h);
+          gl4duSendMatrices();
+        } gl4duPopMatrix();
+
+        glBindTexture(GL_TEXTURE_2D, _itemTexId);
         gl4dgDraw(_cube);
       }
     }
-  } 
+  }
 
   /* the compass should be drawn in an orthographic projection, thus
    * we should bind the projection matrix; save it; load identity;
@@ -419,8 +501,8 @@ static void draw(void) {
       gl4duScalef(0.03 / 5.0, 1.0 / 5.0, 1.0 / 5.0);
       gl4duBindMatrix("viewMatrix");
       gl4duPushMatrix(); {
-	gl4duLoadIdentityf();
-	gl4duSendMatrices();
+  gl4duLoadIdentityf();
+  gl4duSendMatrices();
       } gl4duPopMatrix();
       gl4duBindMatrix("modelMatrix");
     } gl4duPopMatrix();
@@ -449,8 +531,8 @@ static void draw(void) {
       gl4duScalef(1.0 / 5.0, 1.0 / 5.0, 1.0);
       gl4duBindMatrix("viewMatrix");
       gl4duPushMatrix(); {
-	gl4duLoadIdentityf();
-	gl4duSendMatrices();
+  gl4duLoadIdentityf();
+  gl4duSendMatrices();
       } gl4duPopMatrix();
       gl4duBindMatrix("modelMatrix");
     } gl4duPopMatrix();

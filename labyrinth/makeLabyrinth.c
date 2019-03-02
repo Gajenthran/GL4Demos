@@ -10,7 +10,7 @@
 
 static void propoagate(int * lab, int v, int x, int y, int w, int * n) {
   int i;
-  const int dir[4][2] = {{1, 0, 1}, {0, 1, 1}, {-1, 0, 1}, {0, -1, 1}};
+  const int dir[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
   if(v < 0)
     return;
   if(!v && (x&1 && y&1))
