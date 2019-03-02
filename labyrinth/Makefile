@@ -15,17 +15,17 @@ CP = rsync -R
 # déclaration des options du compilateur
 CFLAGS = -Wall -O3
 CPPFLAGS = -I.
-LDFLAGS = -lm
+LDFLAGS = -lm -lSDL2_image
 
 # définition des fichiers et dossiers
-PROGNAME = sample3d_01
-VERSION = 1.7.1
+PROGNAME = sample3d_02
+VERSION = 1.2
 distdir = $(PROGNAME)-$(VERSION)
 HEADERS = 
 SOURCES = window.c makeLabyrinth.c
 OBJ = $(SOURCES:.c=.o)
 DOXYFILE = documentation/Doxyfile
-EXTRAFILES = COPYING $(wildcard shaders/*.?s images/*.png)
+EXTRAFILES = COPYING $(wildcard shaders/*.?s images/*)
 DISTFILES = $(SOURCES) Makefile $(HEADERS) $(DOXYFILE) $(EXTRAFILES)
 
 # Traitement automatique (ne pas modifier)

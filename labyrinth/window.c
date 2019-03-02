@@ -9,6 +9,8 @@
 #include <math.h>
 #include <GL4D/gl4dp.h>
 #include <GL4D/gl4duw_SDL2.h>
+#include <GL4D/gl4du.h>
+#include <SDL_image.h>
 
 static void quit(void);
 static void initGL(void);
@@ -18,7 +20,7 @@ static void idle(void);
 static void keydown(int keycode);
 static void keyup(int keycode);
 static void pmotion(int x, int y);
-static int  collision(GLfloat, GLfloat);
+static int  collision(void);
 static void spawnItem(void);
 static void draw(void);
 
@@ -53,6 +55,9 @@ static GLfloat _planeScale = 100.0f;
 static GLboolean _anisotropic = GL_FALSE;
 /*!\brief boolean to toggle mipmapping */
 static GLboolean _mipmap = GL_FALSE;
+/*!\brief item filename to load */
+static const char * _item_filename = "img/box.png";
+static const char * _wall_filename = "img/wall.png";
 
 /*!\brief enum that index keyboard mapping for direction commands */
 enum kyes_t {
@@ -77,6 +82,7 @@ typedef struct cam_t cam_t;
 struct cam_t {
   GLfloat x, z;
   GLfloat theta;
+  GLfloat bbox;
 };
 
 typedef struct item_t item_t;
@@ -86,9 +92,9 @@ struct item_t {
 };
 
 /*!\brief the used camera */
-static cam_t _cam = {0, 0, 0};
-static GLfloat _bbox = 5.0f;
+static cam_t _cam = {0, 0, 0, 5.0};
 static item_t _item = {0, 0};
+static int _collision_dir[] = {0, 0, 0, 0};
 
 /*!\brief creates the window, initializes OpenGL parameters,
  * initializes data and maps callback functions */
@@ -136,8 +142,6 @@ static void initGL(void) {
 static void initData(void) {
   /* a red-white texture used to draw a compass */
   GLuint northsouth[] = {(255 << 24) + 255, -1};
-  GLuint wall[] = {-1};
-  GLuint itemTex[] = {(255 << 24) + 255};
   /* generates a quad using GL4Dummies */
    _plane = gl4dgGenQuadf();
   /* generates a cube using GL4Dummies */
@@ -162,23 +166,43 @@ static void initData(void) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, northsouth);
 
+  SDL_Surface * t;
+  int mode;
   /* creation and parametrization of the wall texture */
   glGenTextures(1, &_wallTexId);
   glBindTexture(GL_TEXTURE_2D, _wallTexId);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, wall);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  if( (t = IMG_Load(_wall_filename)) != NULL ) {
+    mode = t->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, mode, GL_UNSIGNED_BYTE, t->pixels);
+    SDL_FreeSurface(t);
+  } else {
+    fprintf(stderr, "can't open file %s : %s\n", _wall_filename, SDL_GetError());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  }
+
+  glGenTextures(1, &_itemTexId);
+  glBindTexture(GL_TEXTURE_2D, _itemTexId);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  if( (t = IMG_Load(_item_filename)) != NULL ) {
+    mode = t->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, mode, GL_UNSIGNED_BYTE, t->pixels);
+    SDL_FreeSurface(t);
+  } else {
+    fprintf(stderr, "can't open file %s : %s\n", _item_filename, SDL_GetError());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  }
 
   /* creation and parametrization of the item texture */
-  glGenTextures(1, &_itemTexId);
+  /* glGenTextures(1, &_itemTexId);
   glBindTexture(GL_TEXTURE_2D, _itemTexId);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, itemTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, itemTex); */
 
   spawnItem();
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -221,7 +245,7 @@ static void updatePosition(void) {
     GLfloat dx = xf - _item.x;
     GLfloat dz = zf - _item.z;
     double dist = sqrt(dx * dx + dz * dz);
-    if(_labyrinth[zi * _lab_side + xi] == 2 && dist < 0.1f) {
+    if(_labyrinth[zi * _lab_side + xi] == 2 && dist < _cam.bbox) {
       _labyrinth[zi * _lab_side + xi] = 0;
       glBindTexture(GL_TEXTURE_2D, _planeTexId);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _lab_side, _lab_side, 0, GL_RGBA, GL_UNSIGNED_BYTE, _labyrinth);
@@ -256,29 +280,48 @@ static void spawnItem(void) {
   _labyrinth[(int)z * _lab_side + (int)x] = 2;
 }
 
-static int collision(GLfloat nextx, GLfloat nextz) {
+static int collision(void) {
   GLfloat xf, zf;
-  static int xi = -1, zi = -1;
-  /* translate to lower-left */
-  xf = _cam.x + _planeScale + nextx;
-  zf = -_cam.z + _planeScale + nextz;
-  /* scale to 1.0 x 1.0 */
-  xf = xf / (2.0f * _planeScale);
-  zf = zf / (2.0f * _planeScale);
-  /* rescale to _lab_side x _lab_side */
-  xf = xf * _lab_side;
-  zf = zf * _lab_side;
+  int xi = -1, zi = -1, i;
+  int col = 0;
 
-  if((int)xf != xi || (int)zf != zi) {
-    xi = (int)xf;
-    zi = (int)zf;
-  } 
+  GLfloat dir[4][2] = {
+    { -cos(_cam.theta), sin(_cam.theta)},
+    {  cos(_cam.theta), sin(_cam.theta)},
+    { -sin(_cam.theta), cos(_cam.theta)},
+    {  sin(_cam.theta), -cos(_cam.theta)}
+  };
 
-  if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side && _labyrinth[zi * _lab_side + xi] == -1) {
-    return 1;
+  for(i = 0; i < 4; i++) {
+    xf = _cam.x + _planeScale + dir[i][0] * _cam.bbox; //  + nextx;
+    zf = -_cam.z + _planeScale + dir[i][1] * _cam.bbox/4; //  + nextz;
+    /* scale to 1.0 x 1.0 */
+    xf = xf / (2.0f * _planeScale);
+    zf = zf / (2.0f * _planeScale);
+    /* rescale to _lab_side x _lab_side */
+    xf = xf * _lab_side;
+    zf = zf * _lab_side;
+
+    if((int)xf != xi || (int)zf != zi) {
+      xi = (int)xf;
+      zi = (int)zf;
+    } 
+
+    if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side && _labyrinth[zi * _lab_side + xi] == -1)
+      _collision_dir[i] = 1;
+    else
+      _collision_dir[i] = 0;
   }
 
-  return 0;
+  for(i = 0; i < 4; i++) {
+    if(_collision_dir[i]) {
+      printf("i : %d\n", i);
+      col = 1;
+    }
+  }
+
+
+  return col;
 }
 
 /*!\brief function called by GL4Dummies' loop at idle.
@@ -287,9 +330,7 @@ static int collision(GLfloat nextx, GLfloat nextz) {
  * direction, orientation and time (dt = delta-time)
  */
 static void idle(void) {
-  int col = -1;
-  double dt, dtheta = M_PI, step = 20.0;
-  GLfloat x, z;
+  double dt, dtheta = M_PI, step = 5.0;
   static double t0 = 0, t;
   dt = ((t = gl4dGetElapsedTime()) - t0) / 1000.0;
   t0 = t;
@@ -300,17 +341,21 @@ static void idle(void) {
   if(_keys[KUP]) {
     _cam.x += -dt * step * sin(_cam.theta);
     _cam.z += -dt * step * cos(_cam.theta);
-    if(collision(_bbox * -sin(_cam.theta), _bbox * cos(_cam.theta))) {
-      _cam.x -= -dt * step * sin(_cam.theta);
-      _cam.z -= -dt * step * cos(_cam.theta);
+    if(collision()) {
+      if(_collision_dir[KLEFT] || _collision_dir[KRIGHT])
+        _cam.x -= -dt * step * sin(_cam.theta);
+      if(_collision_dir[KUP] || _collision_dir[KDOWN])
+        _cam.z -= -dt * step * cos(_cam.theta);
     }
   }
   if(_keys[KDOWN]) {
     _cam.x += dt * step * sin(_cam.theta);
     _cam.z += dt * step * cos(_cam.theta);
-    if(collision(_bbox * sin(_cam.theta), _bbox * -cos(_cam.theta))) {
-      _cam.x -= dt * step * sin(_cam.theta);
-      _cam.z -= dt * step * cos(_cam.theta);
+    if(collision()) {
+      if(_collision_dir[KLEFT] || _collision_dir[KRIGHT])
+        _cam.x -= dt * step * sin(_cam.theta);
+      if(_collision_dir[KUP] || _collision_dir[KDOWN])
+        _cam.z -= dt * step * cos(_cam.theta);
     }
   }
   updatePosition();
@@ -463,25 +508,21 @@ static void draw(void) {
         } gl4duPopMatrix();
 
         glCullFace(GL_BACK);
-        glUniform1i(glGetUniformLocation(_pId, "border"), 1);
         glBindTexture(GL_TEXTURE_2D, _wallTexId);
-        gl4dgDraw(_cube);
-        glUniform1i(glGetUniformLocation(_pId, "border"), 0);
-      }
-
-      if(_labyrinth[(_lab_side - 1 - j) * _lab_side + i] == 2) {
-        int xi = i - _lab_side/2, zi = j - _lab_side/2;
-        gl4duPushMatrix(); {
-          gl4duTranslatef(xi * res, 1, zi * res);
-          gl4duScalef(_item.w, 100, _item.h);
-          gl4duSendMatrices();
-        } gl4duPopMatrix();
-
-        glBindTexture(GL_TEXTURE_2D, _itemTexId);
         gl4dgDraw(_cube);
       }
     }
   }
+
+  GLfloat xf = _item.x - _lab_side/2, zf = _item.z - _lab_side/2;
+  gl4duPushMatrix(); {
+    gl4duTranslatef(xf * res, 1, zf * res);
+    gl4duScalef(_item.w, 1, _item.h);
+    gl4duSendMatrices();
+  } gl4duPopMatrix();
+  glCullFace(GL_BACK);
+  glBindTexture(GL_TEXTURE_2D, _itemTexId);
+  gl4dgDraw(_cube);
 
   /* the compass should be drawn in an orthographic projection, thus
    * we should bind the projection matrix; save it; load identity;
