@@ -88,11 +88,10 @@ struct cam_t {
 typedef struct item_t item_t;
 struct item_t {
   GLfloat x, z, w, h;
-  // GLfloat bbox;
 };
 
 /*!\brief the used camera */
-static cam_t _cam = {0, 0, 0, 5.0};
+static cam_t _cam = {0, 0, 0, 1.0};
 static item_t _item = {0, 0};
 static int _collision_dir[] = {0, 0, 0, 0};
 
@@ -195,15 +194,6 @@ static void initData(void) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   }
 
-  /* creation and parametrization of the item texture */
-  /* glGenTextures(1, &_itemTexId);
-  glBindTexture(GL_TEXTURE_2D, _itemTexId);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, itemTex); */
-
   spawnItem();
   glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -241,31 +231,21 @@ static void updatePosition(void) {
   /* re-set previous position to black and the new one to red */
   xi = (int)xf;
   zi = (int)zf;
+  // printf("player: %f - %f\n", xf, zf);
   if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side) {
+    printf("item.x : %f - xf : %f\n", _item.x, xf);
+    printf("item.z : %f - zf : %f\n", _item.z, zf);
     GLfloat dx = xf - _item.x;
     GLfloat dz = zf - _item.z;
     double dist = sqrt(dx * dx + dz * dz);
-    if(_labyrinth[zi * _lab_side + xi] == 2 && dist < _cam.bbox) {
+    printf("dist: %f\n\n", dist);
+    if(_labyrinth[zi * _lab_side + xi] == 2 && dist < 1.0) {
       _labyrinth[zi * _lab_side + xi] = 0;
       glBindTexture(GL_TEXTURE_2D, _planeTexId);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _lab_side, _lab_side, 0, GL_RGBA, GL_UNSIGNED_BYTE, _labyrinth);
       spawnItem();  
     }
   }
-  /* if((int)xf != xi || (int)zf != zi) {
-    if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side && _labyrinth[zi * _lab_side + xi] != -1) {
-      _labyrinth[zi * _lab_side + xi] = 0;
-      glBindTexture(GL_TEXTURE_2D, _planeTexId);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _lab_side, _lab_side, 0, GL_RGBA, GL_UNSIGNED_BYTE, _labyrinth);
-    }
-    xi = (int)xf;
-    zi = (int)zf;
-    if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side && _labyrinth[zi * _lab_side + xi] != -1) {
-      _labyrinth[zi * _lab_side + xi] = RGB(255, 0, 0);
-      glBindTexture(GL_TEXTURE_2D, _planeTexId);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _lab_side, _lab_side, 0, GL_RGBA, GL_UNSIGNED_BYTE, _labyrinth);
-    }
-  } */
 }
 
 static void spawnItem(void) {
@@ -293,8 +273,8 @@ static int collision(void) {
   };
 
   for(i = 0; i < 4; i++) {
-    xf = _cam.x + _planeScale + dir[i][0] * _cam.bbox; //  + nextx;
-    zf = -_cam.z + _planeScale + dir[i][1] * _cam.bbox/4; //  + nextz;
+    xf = _cam.x + _planeScale + dir[i][0] * _cam.bbox; 
+    zf = -_cam.z + _planeScale + dir[i][1] * _cam.bbox/4;
     /* scale to 1.0 x 1.0 */
     xf = xf / (2.0f * _planeScale);
     zf = zf / (2.0f * _planeScale);
@@ -315,7 +295,7 @@ static int collision(void) {
 
   for(i = 0; i < 4; i++) {
     if(_collision_dir[i]) {
-      printf("i : %d\n", i);
+      // printf("i : %d\n", i);
       col = 1;
     }
   }
@@ -330,7 +310,7 @@ static int collision(void) {
  * direction, orientation and time (dt = delta-time)
  */
 static void idle(void) {
-  double dt, dtheta = M_PI, step = 5.0;
+  double dt, dtheta = M_PI, step = 15.0;
   static double t0 = 0, t;
   dt = ((t = gl4dGetElapsedTime()) - t0) / 1000.0;
   t0 = t;
@@ -342,9 +322,9 @@ static void idle(void) {
     _cam.x += -dt * step * sin(_cam.theta);
     _cam.z += -dt * step * cos(_cam.theta);
     if(collision()) {
-      if(_collision_dir[KLEFT] || _collision_dir[KRIGHT])
+      if(_collision_dir[KLEFT] || _collision_dir[KRIGHT])
         _cam.x -= -dt * step * sin(_cam.theta);
-      if(_collision_dir[KUP] || _collision_dir[KDOWN])
+      if(_collision_dir[KUP] || _collision_dir[KDOWN])
         _cam.z -= -dt * step * cos(_cam.theta);
     }
   }
@@ -352,9 +332,9 @@ static void idle(void) {
     _cam.x += dt * step * sin(_cam.theta);
     _cam.z += dt * step * cos(_cam.theta);
     if(collision()) {
-      if(_collision_dir[KLEFT] || _collision_dir[KRIGHT])
+      if(_collision_dir[KLEFT] || _collision_dir[KRIGHT])
         _cam.x -= dt * step * sin(_cam.theta);
-      if(_collision_dir[KUP] || _collision_dir[KDOWN])
+      if(_collision_dir[KUP] || _collision_dir[KDOWN])
         _cam.z -= dt * step * cos(_cam.theta);
     }
   }
@@ -514,9 +494,10 @@ static void draw(void) {
     }
   }
 
-  GLfloat xf = _item.x - _lab_side/2, zf = _item.z - _lab_side/2;
+  GLfloat xf = _item.x - _lab_side/2.0f, zf = _item.z - _lab_side/2.0;
+  // printf("item :%f - %f\n\n", _item.x, _item.z);
   gl4duPushMatrix(); {
-    gl4duTranslatef(xf * res, 1, zf * res);
+    gl4duTranslatef(xf * _planeScale/_lab_side * 2.0f, 1, -zf * _planeScale/_lab_side * 2.0f);
     gl4duScalef(_item.w, 1, _item.h);
     gl4duSendMatrices();
   } gl4duPopMatrix();
