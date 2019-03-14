@@ -55,9 +55,22 @@ static GLfloat _planeScale = 100.0f;
 static GLboolean _anisotropic = GL_FALSE;
 /*!\brief boolean to toggle mipmapping */
 static GLboolean _mipmap = GL_FALSE;
-/*!\brief item filename to load */
-static const char * _item_filename = "img/box.png";
-static const char * _wall_filename = "img/wall.png";
+
+/*!\brief noms des fichiers textures à charger */
+static const char * _texture_filenames[] = { 
+  "img/box.png", 
+  "img/wall.png", 
+};
+
+/*!\brief enum pour chaque texture */
+enum texture_e {
+  TE_BOX = 0,
+  TE_WALL,
+  TE_END
+};
+
+/*!\brief textures à charger */
+static GLuint _tId[TE_END] = {0};
 
 /*!\brief enum that index keyboard mapping for direction commands */
 enum kyes_t {
@@ -65,12 +78,6 @@ enum kyes_t {
   KRIGHT,
   KUP,
   KDOWN
-};
-
-enum typecell {
-  ROAD = 0,
-  WALL = -1,
-  ITEM = 1
 };
 
 /*!\brief virtual keyboard for direction commands */
@@ -91,7 +98,7 @@ struct item_t {
 };
 
 /*!\brief the used camera */
-static cam_t _cam = {0, 0, 0, 1.0};
+static cam_t _cam = {0, 0, 0, 5.0};
 static item_t _item = {0, 0};
 static int _collision_dir[] = {0, 0, 0, 0};
 
@@ -165,33 +172,23 @@ static void initData(void) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, northsouth);
 
-  SDL_Surface * t;
-  int mode;
-  /* creation and parametrization of the wall texture */
-  glGenTextures(1, &_wallTexId);
-  glBindTexture(GL_TEXTURE_2D, _wallTexId);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  if( (t = IMG_Load(_wall_filename)) != NULL ) {
-    mode = t->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, mode, GL_UNSIGNED_BYTE, t->pixels);
-    SDL_FreeSurface(t);
-  } else {
-    fprintf(stderr, "can't open file %s : %s\n", _wall_filename, SDL_GetError());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  }
-
-  glGenTextures(1, &_itemTexId);
-  glBindTexture(GL_TEXTURE_2D, _itemTexId);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  if( (t = IMG_Load(_item_filename)) != NULL ) {
-    mode = t->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, mode, GL_UNSIGNED_BYTE, t->pixels);
-    SDL_FreeSurface(t);
-  } else {
-    fprintf(stderr, "can't open file %s : %s\n", _item_filename, SDL_GetError());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  int i;
+  if(!_tId[0]) {
+    glGenTextures(TE_END, _tId);
+    for(i = 0; i < TE_END; i++) {
+      SDL_Surface * t;
+      glBindTexture(GL_TEXTURE_2D, _tId[i]);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      if( (t = IMG_Load(_texture_filenames[i])) != NULL ) {
+        int mode = t->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0, mode, GL_UNSIGNED_BYTE, t->pixels);
+        SDL_FreeSurface(t);
+      } else {
+        fprintf(stderr, "can't open file %s : %s\n", _texture_filenames[i], SDL_GetError());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      }
+    }
   }
 
   spawnItem();
@@ -231,19 +228,15 @@ static void updatePosition(void) {
   /* re-set previous position to black and the new one to red */
   xi = (int)xf;
   zi = (int)zf;
-  // printf("player: %f - %f\n", xf, zf);
   if(xi >= 0 && xi < _lab_side && zi >= 0 && zi < _lab_side) {
-    printf("item.x : %f - xf : %f\n", _item.x, xf);
-    printf("item.z : %f - zf : %f\n", _item.z, zf);
     GLfloat dx = xf - _item.x;
     GLfloat dz = zf - _item.z;
     double dist = sqrt(dx * dx + dz * dz);
-    printf("dist: %f\n\n", dist);
-    if(_labyrinth[zi * _lab_side + xi] == 2 && dist < 1.0) {
+    if(_labyrinth[zi * _lab_side + xi] == 2 && dist < _cam.bbox) {
       _labyrinth[zi * _lab_side + xi] = 0;
       glBindTexture(GL_TEXTURE_2D, _planeTexId);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _lab_side, _lab_side, 0, GL_RGBA, GL_UNSIGNED_BYTE, _labyrinth);
-      spawnItem();  
+      spawnItem();
     }
   }
 }
@@ -295,11 +288,9 @@ static int collision(void) {
 
   for(i = 0; i < 4; i++) {
     if(_collision_dir[i]) {
-      // printf("i : %d\n", i);
       col = 1;
     }
   }
-
 
   return col;
 }
@@ -488,21 +479,20 @@ static void draw(void) {
         } gl4duPopMatrix();
 
         glCullFace(GL_BACK);
-        glBindTexture(GL_TEXTURE_2D, _wallTexId);
+        glBindTexture(GL_TEXTURE_2D, _tId[TE_WALL]);
         gl4dgDraw(_cube);
       }
     }
   }
 
   GLfloat xf = _item.x - _lab_side/2.0f, zf = _item.z - _lab_side/2.0;
-  // printf("item :%f - %f\n\n", _item.x, _item.z);
   gl4duPushMatrix(); {
-    gl4duTranslatef(xf * _planeScale/_lab_side * 2.0f, 1, -zf * _planeScale/_lab_side * 2.0f);
+    gl4duTranslatef(xf * res, 1, -zf * res);
     gl4duScalef(_item.w, 1, _item.h);
     gl4duSendMatrices();
   } gl4duPopMatrix();
   glCullFace(GL_BACK);
-  glBindTexture(GL_TEXTURE_2D, _itemTexId);
+  glBindTexture(GL_TEXTURE_2D, _tId[TE_BOX]);
   gl4dgDraw(_cube);
 
   /* the compass should be drawn in an orthographic projection, thus
