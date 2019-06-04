@@ -43,12 +43,8 @@ static GLuint _cube = 0;
 static GLuint _pId = 0;
 /*!\brief plane texture Id */
 static GLuint _planeTexId = 0;
-/*!\brief wall texture Id */
-static GLuint _wallTexId = 0;
 /*!\brief compass texture Id */
 static GLuint _compassTexId = 0;
-/*!\brief item texture Id */
-static GLuint _itemTexId = 0;
 /*!\brief plane scale factor */
 static GLfloat _planeScale = 100.0f;
 /*!\brief boolean to toggle anisotropic filtering */
@@ -264,6 +260,7 @@ static int collision(void) {
     { -sin(_cam.theta), cos(_cam.theta)},
     {  sin(_cam.theta), -cos(_cam.theta)}
   };
+
 
   for(i = 0; i < 4; i++) {
     xf = _cam.x + _planeScale + dir[i][0] * _cam.bbox; 

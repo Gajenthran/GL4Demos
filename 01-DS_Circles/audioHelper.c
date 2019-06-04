@@ -119,8 +119,7 @@ void ahInitAudio(const char * file) {
     Mix_PlayMusic(_mmusic, 1);
 }
 
-/*!\brief Libère l'audio.
- */
+/*!\brief Libère l'audio. */
 void ahClean(void) {
   if(_mmusic) {
     if(Mix_PlayingMusic())

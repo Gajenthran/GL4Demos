@@ -24,8 +24,6 @@ extern "C" {
   extern void credits(int state);
 
 
-
-
 #ifdef __cplusplus
 }
 #endif
