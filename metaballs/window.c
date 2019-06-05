@@ -10,12 +10,9 @@ static void quit(void);
 static int _windowWidth = 600, _windowHeight = 600;
 /*!\brief GLSL program Id */
 static GLuint _pId = 0;
-/*!\brief mobiles' texture Id for storing mobile coordinates */
-static GLuint _tId = 0;
+static int _basses = 0;
 /*!\brief A generated Quad Id */
 static GLuint _quad = 0;
-/*!\brief number of mobiles to simulate */
-static const int _nbMobiles = 10;
 
 /*!\brief main function, creates the window, initialise OpenGL
  *  parameters and objects, sets GL4Dummies callback function and
@@ -45,15 +42,8 @@ static void init(void) {
   /* generating a Quad (Vertex coords + Vertex Normal + Vertex TexCoord */
   _quad = gl4dgGenQuadf();
   /* creating a 1D texture to store mobile coords */
-  glGenTextures(1, &_tId);
-  glBindTexture(GL_TEXTURE_1D, _tId);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F, 1, 0, GL_RGBA, GL_FLOAT, NULL);
   glBindTexture(GL_TEXTURE_1D, 0);
   /* calling mobileInit */
-  mobileInit(_nbMobiles, _windowWidth, _windowHeight);
 }
 
 /*!\brief sets the OpenGL viewport according to the window width and height.
@@ -70,9 +60,6 @@ static void keydown(int keycode) {
   case SDLK_ESCAPE:
   case 'q':
     exit(0);
-  case 'r':
-    mobileInit(_nbMobiles, _windowWidth, _windowHeight);
-    break;
   }
 }
 
@@ -81,23 +68,12 @@ static void keydown(int keycode) {
 static void draw(void) {
   static GLfloat onde = 3.0;
   int time = SDL_GetTicks();
-  GLfloat * f = malloc(_nbMobiles * 8 * sizeof *f), step = 1.0 / (_nbMobiles * 2);
-  assert(f);
   glDisable(GL_DEPTH_TEST);
   glUseProgram(_pId);
 
   glClear(GL_COLOR_BUFFER_BIT);  
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_1D, _tId);
-  mobileMove();
-  mobile2texture(f);
-  glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F, 2 * _nbMobiles, 0, GL_RGBA, GL_FLOAT, f);
-  free(f);
-  glUniform1i(glGetUniformLocation(_pId, "mobiles"), 0);
   glUniform1i(glGetUniformLocation(_pId, "time"), time);
-  glUniform1f(glGetUniformLocation(_pId, "step"), step);
-  glUniform1f(glGetUniformLocation(_pId, "onde"), onde);
+  glUniform1i(glGetUniformLocation(_pId, "basses"), _basses);
 
   gl4dgDraw(_quad);
   glBindVertexArray(0);
@@ -109,7 +85,5 @@ static void draw(void) {
 
 /*!\brief called at exit and delete and clean used data. */
 static void quit(void) {
-  if(_tId) 
-    glDeleteTextures(1, &_tId);
   gl4duClean(GL4DU_ALL);
 }
