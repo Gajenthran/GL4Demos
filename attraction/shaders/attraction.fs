@@ -22,6 +22,6 @@ void main(void) {
   float r = dot(pos/3, pos/3) * onde;
   vec3 c = vec3(sin(3.14 * 10 * mod(0.4 * time/1000 + r * 1.5 / 0.3, 0.3)));
 
-  vec4 t = mix(vec4(c, 1.0), balle(), smoothstep(.1, .009, r));
+  vec4 t = mix(vec4(c, 1.0), balle(), smoothstep(.1, .8, 0.5));
   fragColor = t;
 }

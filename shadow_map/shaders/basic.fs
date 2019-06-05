@@ -10,7 +10,7 @@ in  vec2 vsoTexCoord;
 layout (location = 0) out vec4 fragColor;
 layout (location = 1) out vec4 fragId;
 
-float circle(vec2 p) {
+float ring(vec2 p) {
   float r = length(p);
     r = log(sqrt(r));
     return abs(mod(4.0 * r, 6.0) - 3.0);
@@ -41,7 +41,7 @@ void main(void) {
     vec3 color = vec3(0.0);
     float rz = 1.0;
     uv /= exp(mod(1 * 3.15, 1.0)); // Remplacer par le tic de la musique
-    rz *= abs(circle(uv));
+    rz *= abs(ring(uv));
     color = vec3(1.0, 1.0, 1.0) / rz;
 
     fragColor = vec4((couleur.rgb * diffuse), couleur.a);

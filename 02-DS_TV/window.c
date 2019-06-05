@@ -11,8 +11,13 @@ static void resize(int w, int h);
 static void keydown(int keycode);
 
 static GL4DHanime _animations[] = {
-  { 23500,  tvNoise,  NULL,  NULL },
-  // { 1000,   growCircle,   space,      fondu },
+  { 1400,  shadow,  NULL,  NULL },
+  { 100,  shadow,  tvNoise,  transition_vide },
+  { 2000,  tvNoise,  NULL,  NULL },
+  // { 100,  tvNoise,  growCircle,  fondud },
+  // { 2000,  growCircle,  NULL,  NULL },
+  // { 1000,  growCircle,  musicBox,  fondud },
+  // { 2000,  musicBox,  NULL,  NULL },
   {    0,   NULL,     NULL,  NULL }
 };
 
@@ -30,7 +35,7 @@ int main(int argc, char ** argv) {
   gl4duwKeyDownFunc(keydown);
   gl4duwDisplayFunc(gl4dhDraw);
 
-  ahInitAudio("audio/JPB - High.mp3");
+  ahInitAudio("audio/mixedsong.mp3");
   gl4duwMainLoop();
   return 0;
 }

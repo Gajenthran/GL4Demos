@@ -8,13 +8,13 @@
 #include <GL4D/gl4dp.h>
 #include "audioHelper.h"
 
+
 static void quit(void);
 static void init(int w, int h);
 static void draw(void);
 
 static int _w = 1, _h = 1;
 static GLuint _screen = 0;
-static GLfloat _basses = 0;
 
 static void quit(void) {
   if(_screen) {
@@ -26,6 +26,7 @@ static void quit(void) {
 
 void init(int w, int h) {
   _w = w; _h = h;
+  glDisable(GL_DEPTH_TEST);
   gl4dpClearScreen();
 }
 
@@ -57,7 +58,7 @@ void tvNoise(int state) {
       return;
     case GL4DH_UPDATE_WITH_AUDIO:
       s = (Sint16 *)ahGetAudioStream();
-      _basses = ahGetAudioStreamFreq();
+      // _basses = ahGetAudioStreamFreq();
       return;
     default:
       draw();

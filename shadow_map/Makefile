@@ -21,8 +21,8 @@ LDFLAGS = -lm
 PROGNAME = sample3d_05
 VERSION = 1.0
 distdir = $(PROGNAME)-$(VERSION)
-HEADERS = mobile.h
-SOURCES = window.c mobile.c
+HEADERS = 
+SOURCES = window.c
 OBJ = $(SOURCES:.c=.o)
 DOXYFILE = documentation/Doxyfile
 EXTRAFILES = COPYING $(wildcard shaders/*.?s)

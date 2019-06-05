@@ -14,15 +14,17 @@ extern "C" {
   extern void animationsInit(void);
 
   extern void tvNoise(int state);
+  extern void shadow(int state);
+  extern void growCircle(int state);
 
-  extern void musicFFT(int state);
-  extern void earth(int state);
-  extern void space(int state);
-  extern void voronoi(int state);
-  extern void stars(int state);
+  // extern void musicFFT(int state);
+  // extern void earth(int state);
+  // extern void space(int state);
+  // extern void voronoi(int state);
+  // extern void stars(int state);
   extern void musicBox(int state);
-  extern void attraction(int state);
-  extern void credits(int state);
+  // extern void attraction(int state);
+  // extern void credits(int state);
 
 
 #ifdef __cplusplus
