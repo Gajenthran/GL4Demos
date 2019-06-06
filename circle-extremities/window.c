@@ -10,25 +10,26 @@ static void quit(void) {
 
 static void circleExtremities(void) {
   srand(time(NULL));
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   static GLubyte red = 255, green = 255, blue = 255;
-  static float a = 0.0, r = 10;
+  static float a = 0.0, r = 100;
 
-  if(a >= 2 * M_PI) {
-    a = 0.0;
-    r += 10.0;
-    red = rand()&0xFF; green = rand()&0xFF; blue = rand()&0xFF;
+  float radius = 100;
+  int nbLine = 100;
+  gl4dpCircle(gl4dpGetWidth()/2,gl4dpGetHeight()/2, radius);
+  for(double i = 0; i < 2 * M_PI; i += 2 * M_PI / nbLine) {
+    int x0 = radius * cos(i);
+    int y0 = radius * sin(i);
+    int x1 = (radius + 20) * cos(i);
+    int y1 = (radius + 20) * sin(i);
+    // printf("%d - %d\n", x, y);
+    gl4dpSetColor(RGB(red, green, blue));
+    gl4dpLine(x0 + gl4dpGetWidth()/2, 
+      y0 + gl4dpGetHeight()/2, 
+      x1 + gl4dpGetWidth()/2, 
+      y1 + gl4dpGetHeight()/2);
+    // gl4dpCircle(x + gl4dpGetWidth()/2, y + gl4dpGetHeight()/2, 10);
   }
-
-  int x = r * cos(a) + gl4dpGetWidth()/2;
-  int y = r * sin(a) + gl4dpGetHeight()/2;
-  a += 0.1;
-
-  if(x > gl4dpGetWidth() || y > gl4dpGetHeight()) {
-    return;
-  }
-
-  gl4dpSetColor(RGB(red, green, blue));
-  gl4dpCircle(x, y, 2);
 }
 
 static void draw(void) {
