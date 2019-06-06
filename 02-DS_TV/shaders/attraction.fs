@@ -17,6 +17,4 @@ void main(void) {
 	angle +=  0.0005 * temps / (1.0 + distance);
 	vec2 tc = vec2(0.5) + vec2(distance * cos(angle), distance * sin(angle));
 	fragColor = texture(tex0, tc);
-	if(swirl == 0)
-		fragColor = texture(tex0, vsoTexCoord);
 }

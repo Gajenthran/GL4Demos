@@ -12,8 +12,7 @@ layout (location = 0) out vec4 fragColor;
 layout (location = 1) out vec4 fragId;
 
 float ring(vec2 p) {
-  float r = length(p);
-    r = log(sqrt(r));
+    float r = log(sqrt(length(p)));
     return abs(mod(9.0 * r, 3.0) - 2.0);
 }
 
