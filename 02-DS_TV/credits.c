@@ -26,11 +26,17 @@ static void init(int w, int h) {
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
   _quad = gl4dgGenQuadf();
   initText(&_textTexId, 
-     "Projet - CIRCLES\n\n"
+     "Projet - Audio Visualizer\n\n"
      "Realisateur - GAJENTHRAN \n\n"
      "Soutenu par - FARES BELHADJ\n\n"
-     "Musique - HIGH (JPB)\n\n"
-     "Année - 2018\n\n");
+     "Musiques: \n\n " 
+     " - WE WILL ROCK YOU (QUEEN)\n\n"
+     " - PACMAN REMIX \n\n"
+     " - DJ ERIC REMIX \n\n"
+     " - TETRIS THEME \n\n"
+     " - TURN DOWN FOR WHAT (DJS) \n\n"
+     " - MII THEME \n\n"
+     "Année - 2019 \n\n");
 }
 
 static void draw(void) {
@@ -45,10 +51,10 @@ static void draw(void) {
   gl4duBindMatrix("modelViewMatrix");
 
   gl4duLoadIdentityf();
-    gl4duTranslatef(1.2, 0, -2);
+    gl4duTranslatef(0, 0, -2);
   if(t0 < 0.0f)
     t0 = SDL_GetTicks();
-  t = (SDL_GetTicks() - t0) / 1000.0f, d = -2.4f + 0.40f * t;
+  t = (SDL_GetTicks() - t0) / 1000.0f, d = -1.1f + 0.25f * t;
   glClearColor(0, 0, 0, 1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_BLEND);
@@ -105,7 +111,7 @@ static void initText(GLuint * ptId, const char * text) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   }
-  if( !(font = TTF_OpenFont("Arial.ttf", 100)) ) {
+  if( !(font = TTF_OpenFont("contl.ttf", 100)) ) {
     fprintf(stderr, "TTF_OpenFont: %s\n", TTF_GetError());
     return;
   }

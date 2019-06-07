@@ -190,7 +190,7 @@ static void draw(void) {
   static int t0 = 0, t, dt;
   t = SDL_GetTicks();
   dt = (t - t0) / 1000.0;
-
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   if(_state == 0 && dt == 1) {
     _state = 1;
     _mobile.color[0] = 0.0f;
@@ -229,6 +229,7 @@ static void draw(void) {
     _mobile.color[1] = 1.0f;
     _mobile.color[2] = 0.5f;
     t0 = t;
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   }
   else if(_state == 6 && dt == 2) {
     _state = 7;
@@ -253,11 +254,9 @@ static void draw(void) {
   glViewport(0, 0, _wW, _wH);
 
   glDrawBuffers(1, &renderings[1]);
-  glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT);
 
   glDrawBuffers(1, renderings);
-  glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glDrawBuffers(2, renderings);
@@ -268,6 +267,7 @@ static void draw(void) {
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
   glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+  if(_state == 7) glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 static void mobileDraw(GLuint obj) {
@@ -299,6 +299,7 @@ static void quit(void) {
     gl4dpDeleteScreen();
     _screen = 0;
   }
+  // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void shadow(int state) {

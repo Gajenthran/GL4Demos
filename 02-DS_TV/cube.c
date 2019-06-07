@@ -26,6 +26,8 @@ static int _moyenne = 0;
 static int _gridWidth = 255;
 /*!\brief grid height */
 static int _gridHeight = 255;
+static int _state = 0;
+static float _cubeSize = 0.01;
 /*!\brief position de la lumière relativement à la sphère éclairée */
 static GLfloat _lumPos0[4] = {-1.1, 5.0, 5.7, 1.0};
 
@@ -65,13 +67,13 @@ static void draw(void) {
   gl4duBindMatrix("modelViewMatrix");
   gl4duLoadIdentityf();
   gl4duTranslatef(0, 0, -5);
-  gl4duScalef(0.01, 0.01, 0.01);
+  // gl4duScalef(0.01, 0.01, 0.01);
   mat = gl4duGetMatrixData();
   MMAT4XVEC4(lumPos, mat, _lumPos0);
   glUseProgram(_pId);
   gl4duPushMatrix();
   gl4duRotatef(0, 0, 0, 0);
-  // gl4duScalef(0.5, 0.5, 0.5);
+  gl4duScalef(_cubeSize, _cubeSize, _cubeSize);
   glUniform1i(glGetUniformLocation(_pId, "basses"), _moyenne/1000);
   /* envoi de toutes les matrices stockées par GL4D */
   gl4duSendMatrices();
@@ -94,6 +96,12 @@ static void draw(void) {
   } gl4duPopMatrix();
   gl4dgDraw(_grid);
   gl4duPopMatrix();
+
+  printf("%d\n",_moyenne );
+  if(_moyenne/1000 >= 10)
+    _state = 1;
+  if(_state && _cubeSize <= 0.5)
+    _cubeSize += 0.001;
 }
 
 /*!\brief appelée au moment de sortir du programme (atexit), libère les éléments utilisés */

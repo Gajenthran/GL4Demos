@@ -51,7 +51,7 @@ static void init(int w, int h) {
     }
   }
 
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   _pId  = gl4duCreateProgram("<vs>shaders/pmsphere.vs", "<fs>shaders/pmsphere.fs", NULL);
   gl4duGenMatrix(GL_FLOAT, "modelViewMatrix");
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");

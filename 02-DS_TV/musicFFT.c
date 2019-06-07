@@ -32,18 +32,8 @@ static int _w, _h;
 static mobile_t _mobile;
 static Uint32 white = RGB(255, 255, 255);
 
-
 static fftw_complex * _in4fftw = NULL, * _out4fftw = NULL;
 static fftw_plan _plan4fftw = NULL;
-
-static int _color[6][3] = {
-  {128, 214, 243},
-  {19, 74, 207},
-  {235, 88, 203},
-  {31, 87, 211},
-  {97, 28, 62},
-  {142, 247, 251}
-};
 
 static void init(int w, int h) {
   _w = w; _h = h;
@@ -75,7 +65,7 @@ static void circleToLine(void) {
   if(_mobile.r > 0.0)
     _gap += 1.5;
   int j;
-  gl4dpFilledCircle(_mobile.x, _mobile.y, _mobile.r);
+  gl4dpCircle(_mobile.x, _mobile.y, _mobile.r);
 
   for(j = 0; j < _gap; j++) {
     gl4dpLine(_mobile.x + _mobile.r, _mobile.y, _mobile.x + _radius + j, _mobile.y);
@@ -103,27 +93,23 @@ static void circleExtremities(void) {
   }
 }
 
-
 static void draw(void) {
   int i;
   static int t0 = 0, t, dt;
   t = SDL_GetTicks();
+  if(_state == 0) { t0 = t; _state = 1; }
   dt = (t - t0) / 1000.0;
 
   gl4dpSetScreen(_screen);
   gl4dpClearScreenWith(RGB(0, 0, 0));
   gl4dpSetColor(white);
 
-  if(_state == 0 && dt >= 5) {
-    _state++;
-    t0 = t;
-  } else if(_state == 1 && _mobile.r <= 0) {
-    _state++;
-  }
+  if(_state == 1 && dt >= 7) { _state++; t0 = t; } 
+  else if(_state == 2 && _mobile.r <= 0) { _state++; }
 
-  if(_state == 0) {
+  if(_state == 1) {
     circleExtremities();
-  } else if(_state == 1) {
+  } else if(_state == 2) {
     circleToLine();
   } else {
     if(_mobile.r <= 0.0) {

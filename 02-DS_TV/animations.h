@@ -22,14 +22,13 @@ extern "C" {
   extern void cube(int state);
   extern void breakedCircle(int state);
   extern void musicFFT(int state);
+  extern void credits(int state);
 
   // extern void earth(int state);
   // extern void space(int state);
   // extern void voronoi(int state);
   // extern void stars(int state);
   // extern void attraction(int state);
-  // extern void credits(int state);
-
 
 #ifdef __cplusplus
 }
