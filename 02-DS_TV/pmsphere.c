@@ -9,28 +9,22 @@
 static void  init(int w, int h);
 static void  draw(void);
 static void  quit(void);
-static float myRand(float max);
 
-static int _swirl = 0;
+static int _w, _h;
+static GLuint _screen = 0;
+
+static GLuint _tId = 0;
 static GLuint _pId = 0;
+static int _swirl = 0;
+static int _state = 0, _pixelPrec = 1;
+static int _basses = 0, _pixel = 0;
+
 static GLuint _sphere = 0;
 static GLuint _longitudes = 200, _latitudes = 200;
 static GLfloat _lumPos0[4] = {-15.1, 20.0, 20.7, 1.0};
-static GLfloat _basses = 0, _aigus = 0;
-static int _w, _h;
-static GLuint _screen = 0;
-static float *_sph_att;
+
 static const char * _texture_filename = "images/pacman.png";
 static const char * _sampler_name = "pacman";
-static GLuint _tId = 0;
-
-static float myRand(float max) {
-  float rand = gl4dmURand() * max;
-  float sgn = gl4dmURand() * 2.0;
-  sgn = sgn > 1.0 ? 1.0 : -1.0;
-  rand *= sgn;
-  return rand;
-}
 
 static void init(int w, int h) {
   _w = w; _h = h;
@@ -55,12 +49,6 @@ static void init(int w, int h) {
   gl4duGenMatrix(GL_FLOAT, "modelViewMatrix");
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
   _sphere = gl4dgGenSpheref(_longitudes, _latitudes);
-  _sphere = gl4dgGenSpheref(30, 30);
-
-  _sph_att = malloc(2 * sizeof(*_sph_att));
-  assert(_sph_att);
-  _sph_att[0] = myRand(1.5);
-  _sph_att[1] = myRand(1.1);
 }
 
 static void draw(void) {
@@ -73,11 +61,6 @@ static void draw(void) {
   dt = (t - t0) / 1000.0;
   t0 = t;
 
-  if(_basses >= 5) {
-    _swirl = 1;
-  } else {
-    _swirl = 0;
-  }
   GLboolean gdt = glIsEnabled(GL_DEPTH_TEST);
   glGetIntegerv(GL_VIEWPORT, vp);
   gl4duBindMatrix("projectionMatrix");
@@ -101,8 +84,10 @@ static void draw(void) {
   gl4duRotatef(a0, 0, 1, 0);
   gl4duScalef(0.50, 0.50, 0.50);
   glUniform1i(glGetUniformLocation(_pId, _sampler_name), 0);
-  glUniform1f(glGetUniformLocation(_pId, "basses"), _basses);
+  glUniform1i(glGetUniformLocation(_pId, "basses"), _basses);
   glUniform1i(glGetUniformLocation(_pId, "swirl"), _swirl);
+  glUniform1i(glGetUniformLocation(_pId, "pixel"), _pixel);
+  glUniform1i(glGetUniformLocation(_pId, "pixelPrec"), _pixelPrec);
   glUniform1i(glGetUniformLocation(_pId, "time"), t);
   glUniform2fv(glGetUniformLocation(_pId, "steps"), 1, steps);
   glUniform4fv(glGetUniformLocation(_pId, "lumPos"), 1, lumPos);
@@ -112,7 +97,10 @@ static void draw(void) {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  a0 += 360.0 * dt / 24.0;
+  a0 += 1000.0 * dt / 24.0;
+  if(_basses >= 13) _state++;
+  if(_state == 2) { _swirl = 1; }
+  if(_state >= 7) { a0 = 270.0; _swirl = 0; _pixel = 1; _pixelPrec++; }
   if(!gdt)
     glDisable(GL_DEPTH_TEST);
 }
@@ -143,7 +131,6 @@ void pmsphere(int state) {
   case GL4DH_UPDATE_WITH_AUDIO:
     s = (Sint16 *)ahGetAudioStream();
     _basses = ahGetAudioStreamFreq();
-    _aigus = ahGetAudioStreamAigus();
     return;
   default:
     draw();

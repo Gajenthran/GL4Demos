@@ -11,16 +11,16 @@ static void draw(void);
 static void quit(void);
 
 static int _wW, _wH;
+static int _screen = 0;
 
 static GLuint _pId = 0;
-static int _screen = 0;
 static int _basses = 0;
+static GLuint _quad = 0;
 
 static int _state = 0;
 static int _circle = 0;
 static int _color = 0;
 
-static GLuint _quad = 0;
 
 static void init(int w, int h) {
   _wH = h;

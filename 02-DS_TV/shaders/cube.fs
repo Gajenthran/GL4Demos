@@ -4,6 +4,10 @@ in  vec2 vsoTexCoord;
 out vec4 fragColor;
 
 void main(void) {
+  /* Création d'une grille de 7*7 avec chaque rangée de la grille qui 
+   * sera remplie en fonction de la musique.
+   * TODO: faire en fonction des colonnes de la grille avec echantillons 
+   */
   float nbLines = 7.0;
   vec2 pos = (fract(vsoTexCoord * nbLines) - 1.0) * 2.0;
   vec2 lpos = vsoTexCoord * nbLines;

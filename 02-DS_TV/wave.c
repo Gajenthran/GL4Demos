@@ -12,34 +12,23 @@ static void draw(void);
 static void quit(void);
 
 static GLuint _screen = 0;
-/*!\brief window's width and height */
 static int _wW, _wH;
-/*!\brief GLSL program Id */
+
 static GLuint _pId = 0;
 static GLuint _basses = 0;
 static GLuint _state = 0;
 static GLuint _wave = 0;
-/*!\brief A generated Quad Id */
 static GLuint _quad = 0;
 
-/*!\brief initialise OpenGL parameters and data. */
 static void init(int w, int h) {
   _wW = w;
   _wH = h;
-  /* setting OpenGL clear color (for next glClear) */
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  /* loading and compiling a GLSL program composed with a vertex shader and a fragment shader */
   _pId = gl4duCreateProgram("<vs>shaders/wave.vs", "<fs>shaders/wave.fs", NULL);
-  /* generating a Quad (Vertex coords + Vertex Normal + Vertex TexCoord */
   _quad = gl4dgGenQuadf();
-  /* creating a 1D texture to store mobile coords */
   glBindTexture(GL_TEXTURE_1D, 0);
-  /* calling mobileInit */
 }
 
-
-/*!\brief mobile simulation and draw
- */
 static void draw(void) {
   static int prev_basses = 0;
   static float line = 10.0;
@@ -58,7 +47,7 @@ static void draw(void) {
     line += 15.0;
     _state++;
   }
-  if(_state == 2)
+  if(_state == 3)
     _wave = 1;
   prev_basses = _basses;
   glBindVertexArray(0);
@@ -66,7 +55,6 @@ static void draw(void) {
   glUseProgram(0);
 }
 
-/*!\brief called at exit and delete and clean used data. */
 static void quit(void) {
   if(_screen) {
     gl4dpSetScreen(_screen);

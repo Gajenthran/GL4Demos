@@ -8,7 +8,7 @@ out vec4 fragColor;
 
 
 void main(void) {  
-  // Mouvement du cercle
+  /* Mouvement des pics de la forme selon la musique */
   vec2 pos = vec2(0.5) - vsoTexCoord;
   float radius = length(pos) * 7.0;
 
@@ -24,7 +24,7 @@ void main(void) {
 
   fragColor = colorCercle;
   if(wave != 0) {
-    // Création d'ondes
+    /* Création des ondes qui varient selon la musique */
     const float speed = .000001;
     const float rate = 15.0;
     const float amp = 0.19;

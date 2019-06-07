@@ -299,7 +299,6 @@ static void quit(void) {
     gl4dpDeleteScreen();
     _screen = 0;
   }
-  // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void shadow(int state) {

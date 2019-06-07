@@ -14,7 +14,6 @@ extern "C" {
   extern void animationsInit(void);
 
   extern void tvNoise(int state);
-  extern void pmform(int state);
   extern void pmsphere(int state);
   extern void shadow(int state);
   extern void color(int state);

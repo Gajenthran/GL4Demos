@@ -10,28 +10,24 @@
 
 #define ECHANTILLONS 1024
 
-/* Prototypes des fonctions statiques contenues dans ce fichier C */
 static void         init(int w, int h);
 static void         draw(void);
 static void         quit(void);
-/*!\brief dimensions de la fenêtre */
+
 static int _screen = 0;
 static int _wW, _wH;
-/*!\brief identifiant des GLSL program */
+
 static GLuint _pId = 0, _pId2 = 0;
-/*!\brief identifiant de la sphere */
 static GLuint _cube = 0;
 static GLuint _grid = 0;
 static int _moyenne = 0;
 static int _gridWidth = 255;
-/*!\brief grid height */
 static int _gridHeight = 255;
-static int _state = 0;
 static float _cubeSize = 0.01;
-/*!\brief position de la lumière relativement à la sphère éclairée */
 static GLfloat _lumPos0[4] = {-1.1, 5.0, 5.7, 1.0};
 
-/*!\brief initialise les paramètres OpenGL */
+static int _state = 0;
+
 static void init(int w, int h) {
   _wW = w;
   _wH = h;
@@ -44,8 +40,6 @@ static void init(int w, int h) {
   _grid = gl4dgGenGrid2df(_gridWidth, _gridHeight);
 }
 
-/*!\brief Cette fonction dessine dans le contexte OpenGL actif.
- */
 static void draw(void) {
   static Uint32 t0 = 0;
   GLfloat dt = 0.0;
@@ -74,12 +68,9 @@ static void draw(void) {
   gl4duRotatef(0, 0, 0, 0);
   gl4duScalef(_cubeSize, _cubeSize, _cubeSize);
   glUniform1i(glGetUniformLocation(_pId, "basses"), _moyenne/1000);
-  /* envoi de toutes les matrices stockées par GL4D */
   gl4duSendMatrices();
   gl4dgDraw(_cube);
 
-  // glEnable(GL_BLEND);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glActiveTexture(GL_TEXTURE0);
   glUseProgram(_pId2);
   gl4duLoadIdentityf();
@@ -102,7 +93,6 @@ static void draw(void) {
     _cubeSize += 0.001;
 }
 
-/*!\brief appelée au moment de sortir du programme (atexit), libère les éléments utilisés */
 static void quit(void) {
   if(_screen) {
     gl4dpSetScreen(_screen);

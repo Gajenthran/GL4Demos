@@ -2,9 +2,10 @@
 uniform vec4 lumPos;
 uniform vec2 steps;
 uniform int time;
-uniform int swirl;
+uniform int pixelPrec;
+uniform int swirl, pixel;
 uniform sampler2D eday, egloss, ebump;
-uniform float basses, aigus;
+uniform int basses;
 in  vec3 vsoNormal;
 in  vec3 vsoModPos;
 in  vec2 vsoTexCoord;
@@ -25,13 +26,9 @@ vec2 sobel(sampler2D map) {
   return g;
 }
 
-vec4 circle(vec2 pos, vec2 center, float radius, vec3 color, float antialias){   
-  float d = length(pos - center) - radius;     
-  float t = smoothstep (0.0, antialias, d);   
-  return vec4(color, 1.0 - t);   
-}
-
 void main(void) {
+  /* Ajout de lumières sur la texture (lumière diffuse, lumière
+   * ambiante et spéculaire) */
   const vec4 lum_diffus = vec4(1, 1, 0.9, 1);
   const vec4 lum_amb = vec4(0.8, 0.8, 1, 1);
   const vec4 lum_spec = vec4(1, 1, 0.75, 1);
@@ -48,17 +45,23 @@ void main(void) {
   Idiffuse = clamp(dot(N, -L), 0, 1);
   vec3 V = vec3(0, 0, -1);
   vec3 R = reflect(L, N);
-  Ispec = aigus * (0.3 + 0.7 * texture(egloss, vsoTexCoord).r) * pow(clamp(dot(R, -V), 0, 1), 10);
+  Ispec = (0.3 + 0.7 * texture(egloss, vsoTexCoord).r) * pow(clamp(dot(R, -V), 0, 1), 10);
   color = texture(eday, vsoTexCoord);
-
-  vec2 vecteur = vsoTexCoord - vec2(0.5) * 50;
-  float distance = length(vecteur);
-  float angle = atan(vecteur.y, vecteur.x);
-  angle +=  5 * time / (1.0 + distance);
-  vec2 tc = vec2(0.5) + vec2(distance * cos(angle), distance * sin(angle));
-  
   fragColor = lum_diffus * color * Idiffuse + lum_amb * Iamb * color + lum_spec * Ispec;
+
   if(swirl != 0) {
+    /* Melange des éléments de la texture créant une sorte de tourbillon */
+    vec2 vecteur = vsoTexCoord - vec2(0.5) * 50;
+    float distance = length(vecteur);
+    float angle = atan(vecteur.y, vecteur.x);
+    angle +=  5 * time / (1.0 + distance);
+    vec2 tc = vec2(0.5) + vec2(distance * cos(angle), distance * sin(angle));
     fragColor = texture(eday, tc);
+  } else if(pixel != 0) {
+      /* Pixellisation de la texture */
+      vec2 uv = vsoTexCoord;
+      uv.x -= mod(uv.x, 1.0 / pixelPrec);
+      uv.y -= mod(uv.y, 1.0 / pixelPrec);
+      fragColor = texture(eday, uv);
   }
 }

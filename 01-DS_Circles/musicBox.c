@@ -171,7 +171,6 @@ static void draw(void) {
 }
 
 static void quit(void) {
-
   if(_tId[0]) {
     glDeleteTextures(NB_TEXTURES, _tId);
     _tId[0] = 0;

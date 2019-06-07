@@ -8,7 +8,6 @@
 #include <GL4D/gl4dp.h>
 #include "audioHelper.h"
 
-
 static void quit(void);
 static void init(int w, int h);
 static void draw(void);
@@ -58,7 +57,6 @@ void tvNoise(int state) {
       return;
     case GL4DH_UPDATE_WITH_AUDIO:
       s = (Sint16 *)ahGetAudioStream();
-      // _basses = ahGetAudioStreamFreq();
       return;
     default:
       draw();

@@ -8,7 +8,8 @@ in  vec2 vsoTexCoord;
 out vec4 fragColor;
 
 void main(void) {
-  // Cercle coupée en couleur
+  /* Cercle coupée en plusieurs parties avec une partie 
+   * colorée et l'autre non. */
   vec2 pos = abs(2.0 * (vsoTexCoord.xy) - vec2(1));
   float a = atan(pos.x, pos.y);
   float radius = length(vec2(pos.x * 1.3, pos.y));
@@ -31,7 +32,8 @@ void main(void) {
   vec4 colorCircle = vec4(abs(1.0 / (1200.0/b * uv.y)) * color, 1.0);
   fragColor = colorCircle;
 
-  // Mouvement du rayon du cercle
+  /* Dessin du rayon du cercle qui s'agrandira en fonction 
+   * de la musique */
   if(circle != 0) {
     vec2 center = vec2(0);
     float ftime = time * b * 0.001;
