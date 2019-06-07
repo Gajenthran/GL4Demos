@@ -4,12 +4,12 @@ in  vec2 vsoTexCoord;
 out vec4 fragColor;
 
 void main(void) {
-  float n = 7.0;
-  vec2 st = (fract(vsoTexCoord * n) - 1.0) * 2.0;
-  vec2 ist = vsoTexCoord * n;
-  float c = clamp(step(0.8, abs(st.x)) + step(0.9, abs(st.y)), 0.0, 1.0); 
+  float nbLines = 7.0;
+  vec2 pos = (fract(vsoTexCoord * nbLines) - 1.0) * 2.0;
+  vec2 lpos = vsoTexCoord * nbLines;
+  float c = clamp(step(0.8, abs(pos.x)) + step(0.9, abs(pos.y)), 0.0, 1.0); 
   c = 1.0 - c;
-  float y = step(1.0, ist.y * basses * 0.1);
+  float y = step(2.0, lpos.y * basses * 0.1);
   vec3 bg = vec3(1.0) * c * clamp(y, 0.0, 1.0);
   fragColor = vec4(bg, 1);
 }

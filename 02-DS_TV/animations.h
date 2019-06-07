@@ -18,17 +18,10 @@ extern "C" {
   extern void pmsphere(int state);
   extern void shadow(int state);
   extern void color(int state);
-  extern void tetris(int state);
   extern void cube(int state);
-  extern void breakedCircle(int state);
+  extern void wave(int state);
   extern void musicFFT(int state);
   extern void credits(int state);
-
-  // extern void earth(int state);
-  // extern void space(int state);
-  // extern void voronoi(int state);
-  // extern void stars(int state);
-  // extern void attraction(int state);
 
 #ifdef __cplusplus
 }

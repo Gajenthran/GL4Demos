@@ -16,16 +16,11 @@ static GLuint _screen = 0;
 static int _wW, _wH;
 /*!\brief GLSL program Id */
 static GLuint _pId = 0;
+static GLuint _basses = 0;
+static GLuint _state = 0;
+static GLuint _wave = 0;
 /*!\brief A generated Quad Id */
 static GLuint _quad = 0;
-static GLfloat _formCoord[32] = {
-  1.5, 2.5, 3.5, 2.5, 1.5, 4.3,
-  4.5, 1.5, 3.5, 0.5, 3.0, 3.5,
-  1.5, 2.5, 2.5, 0.5, 4.5, 2.5,
-  4.5, 0.5, 3.5, 1.5, 1.5, 1.5,
-  0.5, 1.5, 0.5, 0.5, 4.5, 4.5,
-  0.5, 0.5
-};
 
 /*!\brief initialise OpenGL parameters and data. */
 static void init(int w, int h) {
@@ -34,7 +29,7 @@ static void init(int w, int h) {
   /* setting OpenGL clear color (for next glClear) */
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   /* loading and compiling a GLSL program composed with a vertex shader and a fragment shader */
-  _pId = gl4duCreateProgram("<vs>shaders/breakedCircle.vs", "<fs>shaders/breakedCircle.fs", NULL);
+  _pId = gl4duCreateProgram("<vs>shaders/wave.vs", "<fs>shaders/wave.fs", NULL);
   /* generating a Quad (Vertex coords + Vertex Normal + Vertex TexCoord */
   _quad = gl4dgGenQuadf();
   /* creating a 1D texture to store mobile coords */
@@ -46,15 +41,26 @@ static void init(int w, int h) {
 /*!\brief mobile simulation and draw
  */
 static void draw(void) {
+  static int prev_basses = 0;
+  static float line = 10.0;
   int time = SDL_GetTicks();
   glDisable(GL_DEPTH_TEST);
   glUseProgram(_pId);
 
   glClear(GL_COLOR_BUFFER_BIT);  
   glUniform1i(glGetUniformLocation(_pId, "time"), time);
-  glUniform1fv(glGetUniformLocation(_pId, "formCoord"), 32, _formCoord);
+  glUniform1i(glGetUniformLocation(_pId, "basses"), _basses);
+  glUniform1i(glGetUniformLocation(_pId, "wave"), _wave);
+  glUniform1f(glGetUniformLocation(_pId, "line"), line);
 
   gl4dgDraw(_quad);
+  if (prev_basses >= 15 && _basses >= 15) { 
+    line += 15.0;
+    _state++;
+  }
+  if(_state == 2)
+    _wave = 1;
+  prev_basses = _basses;
   glBindVertexArray(0);
   glBindTexture(GL_TEXTURE_1D, 0);
   glUseProgram(0);
@@ -69,7 +75,7 @@ static void quit(void) {
   }
 }
 
-void breakedCircle(int state) {
+void wave(int state) {
   Sint16 * s;
   switch(state) {
   case GL4DH_INIT:
@@ -81,6 +87,7 @@ void breakedCircle(int state) {
     return;
   case GL4DH_UPDATE_WITH_AUDIO:
     s = (Sint16 *)ahGetAudioStream();
+    _basses = ahGetAudioStreamFreq();
     return;
   default:
     draw();

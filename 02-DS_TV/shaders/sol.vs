@@ -17,9 +17,10 @@ float dephase = float(frame) / 250.0;
 /* hauteur (y) d'un sommet (xz), ici une sinusoide lié à une distance
  * euclidienne + la hauteur lue dans la texture */
 float height(vec2 p) {
+  const float level = 1.5;
   vec2 pp = (p + vec2(1)) / 2.0;
   const float freq = 20.0;
-  float amp = amplitude * clamp(1.0 - length(p), 0, 1);
+  float amp = amplitude * level * clamp(1.0 - length(p), 0, 1);
   return amp * sin(-freq * length(p) + dephase)  + texture(tex, pp).r;
 }
 

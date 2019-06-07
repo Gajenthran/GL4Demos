@@ -12,7 +12,6 @@ static void  quit(void);
 static float myRand(float max);
 
 static int _swirl = 0;
-static int _state = 0;
 static GLuint _pId = 0;
 static GLuint _sphere = 0;
 static GLuint _longitudes = 200, _latitudes = 200;
@@ -68,7 +67,7 @@ static void draw(void) {
   static GLfloat a0 = 0.0;
   static Uint32 t0 = 0;
   GLint vp[4];
-  GLfloat dt2 = 0.0, dt = 0.0, steps[2] = {1.0f / _w, 1.0f / _h};
+  GLfloat dt = 0.0, steps[2] = {1.0f / _w, 1.0f / _h};
   GLfloat lumPos[4], *mat;
   Uint32 t = SDL_GetTicks();
   dt = (t - t0) / 1000.0;

@@ -48,7 +48,7 @@ static void init(int w, int h) {
  */
 static void draw(void) {
   static Uint32 t0 = 0;
-  GLfloat dt = 0.0, steps[2] = {1.0f / _wW, 1.0f / _wH};
+  GLfloat dt = 0.0;
   GLfloat steps2[2] = { 2.0 / _gridWidth, 2.0 / _gridHeight};
   GLfloat lumPos[4], *mat;
   Uint32 t;
@@ -67,7 +67,6 @@ static void draw(void) {
   gl4duBindMatrix("modelViewMatrix");
   gl4duLoadIdentityf();
   gl4duTranslatef(0, 0, -5);
-  // gl4duScalef(0.01, 0.01, 0.01);
   mat = gl4duGetMatrixData();
   MMAT4XVEC4(lumPos, mat, _lumPos0);
   glUseProgram(_pId);
@@ -97,7 +96,6 @@ static void draw(void) {
   gl4dgDraw(_grid);
   gl4duPopMatrix();
 
-  printf("%d\n",_moyenne );
   if(_moyenne/1000 >= 10)
     _state = 1;
   if(_state && _cubeSize <= 0.5)
