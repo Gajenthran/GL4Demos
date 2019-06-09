@@ -2,7 +2,7 @@
 uniform vec4 lumPos;
 uniform vec2 steps;
 uniform int time;
-uniform int pixelPrec;
+uniform float pixelPrec;
 uniform int swirl, pixel;
 uniform sampler2D eday, egloss, ebump;
 uniform int basses;

@@ -128,7 +128,6 @@ static void initText(GLuint * ptId, const char * text) {
 
   glBindTexture(GL_TEXTURE_2D, *ptId);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, s->w, s->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, s->pixels);
-  fprintf(stderr, "Dimensions de la texture : %d %d\n", s->w, s->h);
   SDL_FreeSurface(s);
   TTF_CloseFont(font);
   glBindTexture(GL_TEXTURE_2D, 0);

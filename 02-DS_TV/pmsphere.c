@@ -16,8 +16,10 @@ static GLuint _screen = 0;
 static GLuint _tId = 0;
 static GLuint _pId = 0;
 static int _swirl = 0;
-static int _state = 0, _pixelPrec = 1;
+static int _state = 0;
+static GLfloat _pixelPrec = 1.0;
 static int _basses = 0, _pixel = 0;
+static GLfloat _sphereSize = 0.50, _spherePos[3] = {0.0, 1.0, -3.0};
 
 static GLuint _sphere = 0;
 static GLuint _longitudes = 200, _latitudes = 200;
@@ -52,6 +54,7 @@ static void init(int w, int h) {
 }
 
 static void draw(void) {
+  static int prev_basses = 0.0;
   static GLfloat a0 = 0.0;
   static Uint32 t0 = 0;
   GLint vp[4];
@@ -74,20 +77,20 @@ static void draw(void) {
   glDisable(GL_BLEND);
   gl4duBindMatrix("modelViewMatrix");
   gl4duLoadIdentityf();
-  gl4duTranslatef(0, 0, -3);
   mat = gl4duGetMatrixData();
   MMAT4XVEC4(lumPos, mat, _lumPos0);
 
   glUseProgram(_pId);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, _tId);
+  gl4duTranslatef(_spherePos[0], _spherePos[1], _spherePos[2]);
   gl4duRotatef(a0, 0, 1, 0);
-  gl4duScalef(0.50, 0.50, 0.50);
+  gl4duScalef(_sphereSize, _sphereSize, _sphereSize);
   glUniform1i(glGetUniformLocation(_pId, _sampler_name), 0);
   glUniform1i(glGetUniformLocation(_pId, "basses"), _basses);
   glUniform1i(glGetUniformLocation(_pId, "swirl"), _swirl);
   glUniform1i(glGetUniformLocation(_pId, "pixel"), _pixel);
-  glUniform1i(glGetUniformLocation(_pId, "pixelPrec"), _pixelPrec);
+  glUniform1f(glGetUniformLocation(_pId, "pixelPrec"), _pixelPrec);
   glUniform1i(glGetUniformLocation(_pId, "time"), t);
   glUniform2fv(glGetUniformLocation(_pId, "steps"), 1, steps);
   glUniform4fv(glGetUniformLocation(_pId, "lumPos"), 1, lumPos);
@@ -98,9 +101,13 @@ static void draw(void) {
   glBindTexture(GL_TEXTURE_2D, 0);
 
   a0 += 1000.0 * dt / 24.0;
+  if(prev_basses == 5 && _basses == 6 && _state < 2) _state++;
+  if(_spherePos[1] > 0) {  _swirl = 1; _spherePos[1] -= 0.005; }
+  if(_state >= 2 && _sphereSize < 0.50) { _sphereSize += 0.1; }
   if(_basses >= 13) _state++;
-  if(_state == 2) { _swirl = 1; }
-  if(_state >= 7) { a0 = 270.0; _swirl = 0; _pixel = 1; _pixelPrec++; }
+  if(_state == 2) { _swirl = 0; _pixel = 1; a0 = 270.0; _pixelPrec += 0.6; }
+  if(_state >= 4) { _pixel = 0; }
+  prev_basses = _basses;
   if(!gdt)
     glDisable(GL_DEPTH_TEST);
 }

@@ -64,7 +64,6 @@ static void init(int w, int h) {
   gl4duGenMatrix(GL_FLOAT, "cameraProjectionMatrix");
   gl4duGenMatrix(GL_FLOAT, "cameraPVMMatrix");
 
-  // glViewport(0, 0, _wW, _wH);
   gl4duBindMatrix("lightProjectionMatrix");
   gl4duLoadIdentityf();
   gl4duFrustumf(-1, 1, -1, 1, 1.5, 50.0);
@@ -120,6 +119,7 @@ static void mobileInit(GLfloat width, GLfloat depth) {
 static void scene(GLboolean sm) {
   glEnable(GL_CULL_FACE);
   int time = SDL_GetTicks();
+  GLfloat white[] = {255, 255, 255, 0}, lp[4];
   if(sm) {
     glCullFace(GL_FRONT);
     glUseProgram(_smPID);
@@ -129,7 +129,7 @@ static void scene(GLboolean sm) {
     gl4duBindMatrix("modelMatrix");
     gl4duLoadIdentityf();
   } else {
-    GLfloat white[] = {255, 255, 255, 0}, lp[4], *mat;
+    GLfloat *mat;
     glCullFace(GL_BACK);
     glUseProgram(_shPID);
     glEnable(GL_TEXTURE_2D);
@@ -148,20 +148,22 @@ static void scene(GLboolean sm) {
     gl4duLoadIdentityf();
     gl4duPushMatrix(); {
       gl4duTranslatef(_lumpos[0], _lumpos[1], _lumpos[2]);
+      gl4duScalef(0.5, 0.5, 0.5);
       gl4duSendMatrices();
     } gl4duPopMatrix();
     glUniform1i(glGetUniformLocation(_shPID, "id"), 2);
-    glUniform4fv(glGetUniformLocation(_shPID, "couleur"), 1, white);
-    glUniform1i(glGetUniformLocation(_shPID, "id"), 1);
     glUniform1i(glGetUniformLocation(_shPID, "time"), time);
+    if(_state >= 3) gl4dgDraw(_sphere);
   }
+
   gl4duPushMatrix(); {
     gl4duRotatef(-90, 1, 0, 0);
     gl4duScalef(_plan_s, _plan_s, _plan_s);
     gl4duSendMatrices();
   } gl4duPopMatrix();
-  gl4dgDraw(_quad);
-  gl4duSendMatrices();
+  glUniform1i(glGetUniformLocation(_shPID, "id"), 1);
+  glUniform4fv(glGetUniformLocation(_shPID, "couleur"), 1, white);
+  gl4dgDraw(_quad);  
   mobileDraw(_sphere);
 }
 
@@ -229,7 +231,7 @@ static void draw(void) {
     _mobile.color[1] = 1.0f;
     _mobile.color[2] = 0.5f;
     t0 = t;
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   }
   else if(_state == 6 && dt == 2) {
     _state = 7;

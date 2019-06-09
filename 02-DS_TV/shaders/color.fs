@@ -1,9 +1,8 @@
 #version 330
 uniform int time;
-uniform int basses;
-uniform int state;
-uniform int circle;
-uniform int color;
+uniform int basses, state;
+uniform int circle, side;
+uniform float color[4];
 in  vec2 vsoTexCoord;
 out vec4 fragColor;
 
@@ -15,21 +14,24 @@ void main(void) {
   float radius = length(vec2(pos.x * 1.3, pos.y));
   vec2 uv = vec2(a, radius);
   
-  float part = (uv.x - (color / 3.0)) * 3.0;
+  float part = (uv.x - (side / 3.0)) * 3.0;
   part = mod(part, 3.0);
-  vec3 color = vec3(0.15, 0.15, 0.15);
+  vec3 c = vec3(0.15, 0.15, 0.15);
  
   if(part >= 1.0) {
-    color.r += 1.0;
-    color.g += 1.0;
+    c.r += 1.0;
+    c.g += 1.0;
+    c.r += color[0];
+    c.g += color[1];
+    c.b += color[2];
   }
 
   uv = (2.0 * uv) - 1.0;
-  int b = basses;
+  int b = basses * 5;
   if(circle != 0) {
-    b *= 10;
+    b *= 5;
   }
-  vec4 colorCircle = vec4(abs(1.0 / (1200.0/b * uv.y)) * color, 1.0);
+  vec4 colorCircle = vec4(abs(1.0 / (1200.0/b * uv.y)) * c, 1.0);
   fragColor = colorCircle;
 
   /* Dessin du rayon du cercle qui s'agrandira en fonction 

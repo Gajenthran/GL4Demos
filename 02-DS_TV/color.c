@@ -19,7 +19,8 @@ static GLuint _quad = 0;
 
 static int _state = 0;
 static int _circle = 0;
-static int _color = 0;
+static int _side = 0;
+static GLfloat _color[4] = {1.0, 1.0, 0.0, 1.0};
 
 
 static void init(int w, int h) {
@@ -47,70 +48,76 @@ static void draw(void) {
 
   if(_state == 0 && dt >= 3) {
     _state = 1;
-    _color = 2;
+    _side = 2;
     t0 = t;
   }
   else if(_state == 1 && dt >= 3) {
     _state++;
-    _color = 3;
+    _side = 3;
     t0 = t;
   }
   else if(_state == 2 && dt >= 3) {
     _state++;
-    _color = 1;
+    _side = 1;
     t0 = t;
   }
   else if(_state == 3 && dt >= 3) {
     _state++;
-    _color = 2;
+    _side = 2;
     t0 = t;
   }
   else if(_state == 4 && dt >= 3) {
     _state++;
-    _color = 3;
+    _side = 3;
     t0 = t;
   }
   else if(_state == 5 && dt >= 3) {
     _state++;
-    _color = 1;
+    _side = 1;
     t0 = t;
   }
   else if(_state == 6 && dt >= 3) {
     _state++;
-    _color = 2;
+    _side = 2;
     t0 = t;
   }
   else if(_state == 7 && dt >= 3) {
     _state++;
-    _color = 2;
+    _side = 2;
     t0 = t;
   }
   else if(_state == 8) {
-    _color = 1;
+    _side = 1;
     _circle = 1;
     _state++;
     t0 = t;
   }
   else if(_state == 9 && dt >= 3) {
-    _color = 1;
+    _side = 1;
     _state++;
     t0 = t;
   }
   else if(_state == 10 && dt >= 3) {
-    _color = 3;
+    _side = 3;
     _state++;
     t0 = t;
   }
 
+  if(_state >= 8 && dt >= 3) {
+    _color[0] = fabs(cos(gl4dmURand() * t));
+    _color[1] = fabs(cos(gl4dmURand() * dt));
+    _color[2] = fabs(cos(gl4dmURand() * (t - dt)));
+  }
   glDisable(GL_DEPTH_TEST);
   glUseProgram(_pId);
 
   glClear(GL_COLOR_BUFFER_BIT);  
   glUniform1i(glGetUniformLocation(_pId, "time"), t);
   glUniform1i(glGetUniformLocation(_pId, "basses"), _basses);
-  glUniform1i(glGetUniformLocation(_pId, "color"), _color);
+  glUniform1i(glGetUniformLocation(_pId, "side"), _side);
   glUniform1i(glGetUniformLocation(_pId, "state"), _state);
   glUniform1i(glGetUniformLocation(_pId, "circle"), _circle);
+  glUniform1fv(glGetUniformLocation(_pId, "color"), 4, _color);
 
   gl4dgDraw(_quad);
   glBindVertexArray(0);

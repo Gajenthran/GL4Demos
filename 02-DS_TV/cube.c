@@ -36,6 +36,7 @@ static void init(int w, int h) {
   _pId2 = gl4duCreateProgram("<vs>shaders/sol.vs", "<fs>shaders/sol.fs", NULL);
   gl4duGenMatrix(GL_FLOAT, "modelViewMatrix");
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
+  // _cube = gl4dgGenCubef();
   _cube = gl4dgGenCubef();
   _grid = gl4dgGenGrid2df(_gridWidth, _gridHeight);
 }
@@ -89,7 +90,7 @@ static void draw(void) {
 
   if(_moyenne/1000 >= 10)
     _state = 1;
-  if(_state && _cubeSize <= 0.5)
+  if(_state == 0 && _cubeSize <= 0.5)
     _cubeSize += 0.001;
 }
 

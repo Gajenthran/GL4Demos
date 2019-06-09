@@ -52,8 +52,12 @@ void main(void) {
         fragColor = vec4((couleur.rgb), couleur.a);
       else if(state >= 1 && state <= 3)
         fragColor = vec4((couleur.rgb * diffuse), couleur.a);
-      else
+      else {
+        // vec2 uv = vsoTexCoord - 0.5;
+        // float time = -time * 0.0005;
+        // vec4 color = 1.0 - vec4(sin(length(uv * 1.0 * .08) * 25.0 + time));
         fragColor = mix(vec4((couleur.rgb * diffuse), couleur.a), vec4(color, 1.0), smoothstep(.1, .009, rz));
+      }
     }
   }
 }

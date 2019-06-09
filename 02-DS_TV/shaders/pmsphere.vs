@@ -16,7 +16,7 @@ out vec2 vsoTexCoord;
 void main(void) {
   float move = 0.04;
   if(pixel == 1) {
-    move = 0.009;
+    move = 0.0000004;
   }
   vsoTexCoord = vec2(vsiTexCoord.x, 1.0 - vsiTexCoord.y);
   vec3 bpos = vsiPosition + basses * move * texture(ebump, vsoTexCoord).r * vsiNormal;
