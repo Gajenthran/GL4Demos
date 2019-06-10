@@ -37,11 +37,15 @@ void main(void) {
   /* Dessin du rayon du cercle qui s'agrandira en fonction 
    * de la musique */
   if(circle != 0) {
-    vec2 center = vec2(0);
-    float ftime = time * b * 0.001;
-    radius = length(vec2(0.01 + 0.44 * cos(ftime), 0.09 + 0.45 * sin(ftime)));
-    float thickness = (0.09 + 0.05 * cos(ftime)) / 2.0;
-    float dist = distance(pos, center);
-    fragColor = vec4(smoothstep(thickness, 0.0, abs(radius-dist))) + colorCircle;
+    if(state == -1) {
+      fragColor = vec4(0.0);
+    } else {
+      vec2 center = vec2(0);
+      float ftime = time * b * 0.001;
+      radius = length(vec2(0.01 + 0.44 * cos(ftime), 0.09 + 0.45 * sin(ftime)));
+      float thickness = (0.09 + 0.05 * cos(ftime)) / 2.0;
+      float dist = distance(pos, center);
+      fragColor = vec4(smoothstep(thickness, 0.0, abs(radius-dist))) + colorCircle;
+    }
   }
 }

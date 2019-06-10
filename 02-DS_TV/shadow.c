@@ -43,7 +43,12 @@ static GLuint _depthTex = 0;
 static GLuint _idTex = 0;
 static GLuint _smTex = 0;
 
-static GLfloat _lumpos[] = { -9, 9, 0, 1 };
+static GLfloat _lumpos[] = { -8.5, 8.5, 0, 1 };
+static GLfloat _cloudpos[3][4] = {
+  {-3, 9, 0, 1},
+  {2, 7, 0, 1},
+  {6, 9, 0, 1}
+};
 static mobile_t _mobile;
 static GLfloat _width = 1, _depth = 1;
 static GLfloat _gravity = -9.8 * 3.0;
@@ -154,6 +159,18 @@ static void scene(GLboolean sm) {
     glUniform1i(glGetUniformLocation(_shPID, "id"), 2);
     glUniform1i(glGetUniformLocation(_shPID, "time"), time);
     if(_state >= 3) gl4dgDraw(_sphere);
+
+    int i;
+    for(i = 0; i < 3; i++) {
+      gl4duPushMatrix(); {
+        gl4duTranslatef(_cloudpos[i][0], _cloudpos[i][1], _cloudpos[i][2]);
+        gl4duScalef(1.2, 0.08, 0.3);
+        gl4duSendMatrices();
+      } gl4duPopMatrix();
+      glUniform1i(glGetUniformLocation(_shPID, "id"), 4);
+      glUniform1i(glGetUniformLocation(_shPID, "time"), time);
+      if(_state >= 4) gl4dgDraw(_sphere);
+    }
   }
 
   gl4duPushMatrix(); {
@@ -231,7 +248,6 @@ static void draw(void) {
     _mobile.color[1] = 1.0f;
     _mobile.color[2] = 0.5f;
     t0 = t;
-    // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   }
   else if(_state == 6 && dt == 2) {
     _state = 7;

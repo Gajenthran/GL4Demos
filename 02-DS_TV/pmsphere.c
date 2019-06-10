@@ -19,7 +19,7 @@ static int _swirl = 0;
 static int _state = 0;
 static GLfloat _pixelPrec = 1.0;
 static int _basses = 0, _pixel = 0;
-static GLfloat _sphereSize = 0.50, _spherePos[3] = {0.0, 1.0, -3.0};
+static GLfloat _sphereSize = 0.10, _spherePos[3] = {0.0, 1.0, -3.0};
 
 static GLuint _sphere = 0;
 static GLuint _longitudes = 200, _latitudes = 200;

@@ -19,6 +19,8 @@ float ring(vec2 p) {
 void main(void) {
   if(id == 2) {
     fragColor = vec4(1, 1, 0.5, 1);
+  } else if(id == 4) {
+    fragColor = vec4(0.5, 0.5, 0.5, 1);
   } else {
     vec3 N = normalize(vsoNormal.xyz);
     vec3 L = normalize(vsoMVPos.xyz - lumpos.xyz);
@@ -53,9 +55,6 @@ void main(void) {
       else if(state >= 1 && state <= 3)
         fragColor = vec4((couleur.rgb * diffuse), couleur.a);
       else {
-        // vec2 uv = vsoTexCoord - 0.5;
-        // float time = -time * 0.0005;
-        // vec4 color = 1.0 - vec4(sin(length(uv * 1.0 * .08) * 25.0 + time));
         fragColor = mix(vec4((couleur.rgb * diffuse), couleur.a), vec4(color, 1.0), smoothstep(.1, .009, rz));
       }
     }

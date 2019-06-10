@@ -1,5 +1,6 @@
 #version 330
 uniform int basses;
+uniform int time;
 in  vec2 vsoTexCoord;
 out vec4 fragColor;
 

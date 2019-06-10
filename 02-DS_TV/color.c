@@ -108,6 +108,12 @@ static void draw(void) {
     _color[1] = fabs(cos(gl4dmURand() * dt));
     _color[2] = fabs(cos(gl4dmURand() * (t - dt)));
   }
+
+  if(_state >= 8 && _basses == 0) {
+    printf("%d\n", _basses);
+    _state = -1;
+  }
+
   glDisable(GL_DEPTH_TEST);
   glUseProgram(_pId);
 
