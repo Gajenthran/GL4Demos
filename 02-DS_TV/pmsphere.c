@@ -20,7 +20,8 @@ static int _state = 0;
 static GLfloat _pixelPrec = 1.0;
 static int _basses = 0, _pixel = 0;
 static GLfloat _sphereSize = 0.10, _spherePos[3] = {0.0, 1.0, -3.0};
-
+static int _nbStars = 200;
+static GLfloat _starsPos[200] = {0.0};
 static GLuint _sphere = 0;
 static GLuint _longitudes = 200, _latitudes = 200;
 static GLfloat _lumPos0[4] = {-15.1, 20.0, 20.7, 1.0};
@@ -51,6 +52,10 @@ static void init(int w, int h) {
   gl4duGenMatrix(GL_FLOAT, "modelViewMatrix");
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
   _sphere = gl4dgGenSpheref(_longitudes, _latitudes);
+
+  int i;
+  for(i = 0; i < _nbStars; i++)
+    _starsPos[i] = gl4dmURand() * 3.0 - 1.5;
 }
 
 static void draw(void) {
@@ -83,23 +88,37 @@ static void draw(void) {
   glUseProgram(_pId);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, _tId);
-  gl4duTranslatef(_spherePos[0], _spherePos[1], _spherePos[2]);
-  gl4duRotatef(a0, 0, 1, 0);
-  gl4duScalef(_sphereSize, _sphereSize, _sphereSize);
-  glUniform1i(glGetUniformLocation(_pId, _sampler_name), 0);
-  glUniform1i(glGetUniformLocation(_pId, "basses"), _basses);
-  glUniform1i(glGetUniformLocation(_pId, "swirl"), _swirl);
-  glUniform1i(glGetUniformLocation(_pId, "pixel"), _pixel);
-  glUniform1i(glGetUniformLocation(_pId, "state"), _state);
-  glUniform1f(glGetUniformLocation(_pId, "pixelPrec"), _pixelPrec);
-  glUniform1i(glGetUniformLocation(_pId, "time"), t);
-  glUniform2fv(glGetUniformLocation(_pId, "steps"), 1, steps);
-  glUniform4fv(glGetUniformLocation(_pId, "lumPos"), 1, lumPos);
-  gl4duSendMatrices();
+  gl4duPushMatrix(); {
+    gl4duTranslatef(_spherePos[0], _spherePos[1], _spherePos[2]);
+    gl4duRotatef(a0, 0, 1, 0);
+    gl4duScalef(_sphereSize, _sphereSize, _sphereSize);
+    glUniform1i(glGetUniformLocation(_pId, _sampler_name), 0);
+    glUniform1i(glGetUniformLocation(_pId, "id"), 1);
+    glUniform1i(glGetUniformLocation(_pId, "basses"), _basses);
+    glUniform1i(glGetUniformLocation(_pId, "swirl"), _swirl);
+    glUniform1i(glGetUniformLocation(_pId, "pixel"), _pixel);
+    glUniform1i(glGetUniformLocation(_pId, "state"), _state);
+    glUniform1f(glGetUniformLocation(_pId, "pixelPrec"), _pixelPrec);
+    glUniform1i(glGetUniformLocation(_pId, "time"), t);
+    glUniform2fv(glGetUniformLocation(_pId, "steps"), 1, steps);
+    glUniform4fv(glGetUniformLocation(_pId, "lumPos"), 1, lumPos);
+    gl4duSendMatrices();
+  } gl4duPopMatrix();
   gl4dgDraw(_sphere);
   
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
+
+  int i;
+  for(i = 0; i < _nbStars/2; i++) {
+    gl4duPushMatrix(); {
+      gl4duTranslatef(_starsPos[i], _starsPos[i + 1], -3.0);
+      gl4duScalef(_basses * 0.001, _basses * 0.001, _basses * 0.001);
+      glUniform1i(glGetUniformLocation(_pId, "id"), 2);
+      gl4duSendMatrices();
+    } gl4duPopMatrix();
+    if(_state >= 4 || _state < 0) gl4dgDraw(_sphere);
+  } 
 
   a0 += 1000.0 * dt / 24.0;
   if(prev_basses == 5 && _basses == 6 && _state < 2) _state++;
@@ -108,7 +127,7 @@ static void draw(void) {
   if(_basses >= 13) _state++;
   if(_state == 2) { _swirl = 0; _pixel = 1; a0 = 270.0; _pixelPrec += 0.5; }
   if(_state >= 4) { _pixel = 0; }
-  if(_state >= 12 && _basses == prev_basses) { _state = -99; }
+  if(_state >= 12 && _basses > prev_basses) { _state = -99; }
   prev_basses = _basses;
   if(!gdt)
     glDisable(GL_DEPTH_TEST);

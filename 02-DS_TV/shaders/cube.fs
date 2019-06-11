@@ -4,7 +4,7 @@ uniform int time;
 uniform int id;
 uniform vec4 lumPos;
 uniform sampler2D cube;
-in  vec2 vsoTexCoord;
+// in  vec2 vsoTexCoord;
 in  vec3 vsoNormal;
 in  vec3 vsoModPos;
 out vec4 fragColor;
@@ -31,14 +31,6 @@ void main(void) {
     vec3 R = reflect(L, N);
     fragColor = lum_diffus * color * Idiffuse + lum_amb * Iamb * color + lum_spec * Ispec;
   } else {
-  // float nbLines = 7.0;
-  // vec2 pos = (fract(vsoTexCoord * nbLines) - 1.0) * 2.0;
-  // vec2 lpos = vsoTexCoord * nbLines;
-  // float c = clamp(step(0.8, abs(pos.x)) + step(0.9, abs(pos.y)), 0.0, 1.0); 
-  // c = 1.0 - c;
-  // float y = step(2.0, lpos.y * basses * 0.1);
-  // vec3 bg = vec3(1.0) * c * clamp(y, 0.0, 1.0);
-  // fragColor = vec4(bg, 1);
     fragColor = vec4(1.0);
   }
 }
