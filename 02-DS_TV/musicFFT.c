@@ -79,7 +79,8 @@ static void circleExtremities(void) {
 
   gl4dpCircle(_w/2, _h/2, _mobile.r);
   int it = 0;
-  for(double i = 0; i < 2 * M_PI; i += 2 * M_PI / ECHANTILLONS) {
+  double i;
+  for(i = 0; i < 2 * M_PI; i += 2 * M_PI / ECHANTILLONS) {
     if(it & 16) { it++; continue; }
     int x0 = _mobile.r * cos(i);
     int y0 = _mobile.r * sin(i);

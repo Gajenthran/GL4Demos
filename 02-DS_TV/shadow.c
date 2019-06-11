@@ -164,7 +164,7 @@ static void scene(GLboolean sm) {
     for(i = 0; i < 3; i++) {
       gl4duPushMatrix(); {
         gl4duTranslatef(_cloudpos[i][0], _cloudpos[i][1], _cloudpos[i][2]);
-        gl4duScalef(1.2, 0.08, 0.3);
+        gl4duScalef(1.2, 0.18, 0.3);
         gl4duSendMatrices();
       } gl4duPopMatrix();
       glUniform1i(glGetUniformLocation(_shPID, "id"), 4);

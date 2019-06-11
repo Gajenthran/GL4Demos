@@ -90,6 +90,7 @@ static void draw(void) {
   glUniform1i(glGetUniformLocation(_pId, "basses"), _basses);
   glUniform1i(glGetUniformLocation(_pId, "swirl"), _swirl);
   glUniform1i(glGetUniformLocation(_pId, "pixel"), _pixel);
+  glUniform1i(glGetUniformLocation(_pId, "state"), _state);
   glUniform1f(glGetUniformLocation(_pId, "pixelPrec"), _pixelPrec);
   glUniform1i(glGetUniformLocation(_pId, "time"), t);
   glUniform2fv(glGetUniformLocation(_pId, "steps"), 1, steps);
@@ -105,8 +106,9 @@ static void draw(void) {
   if(_spherePos[1] > 0) {  _swirl = 1; _spherePos[1] -= 0.005; }
   if(_state >= 2 && _sphereSize < 0.50) { _sphereSize += 0.1; }
   if(_basses >= 13) _state++;
-  if(_state == 2) { _swirl = 0; _pixel = 1; a0 = 270.0; _pixelPrec += 0.6; }
+  if(_state == 2) { _swirl = 0; _pixel = 1; a0 = 270.0; _pixelPrec += 0.5; }
   if(_state >= 4) { _pixel = 0; }
+  if(_state >= 12 && _basses == prev_basses) { _state = -99; }
   prev_basses = _basses;
   if(!gdt)
     glDisable(GL_DEPTH_TEST);
