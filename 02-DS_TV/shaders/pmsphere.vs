@@ -23,7 +23,7 @@ void main(void) {
   } else {
     move = 0.04;
     if(state < 0)
-      vsiP.xz += vsiP.xz * sin(30.0 * vsiP.y - 3.0 * time) * 0.05 * 1.0;
+      vsiP.xz += vsiP.xz * sin(basses * 10.0 * vsiP.y - 3.0 * time) * 0.05 * 1.0;
   }
 
   vsoTexCoord = vec2(vsiTexCoord.x, 1.0 - vsiTexCoord.y);

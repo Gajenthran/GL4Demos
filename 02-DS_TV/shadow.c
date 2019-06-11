@@ -51,7 +51,7 @@ static GLfloat _cloudpos[3][4] = {
 };
 static mobile_t _mobile;
 static GLfloat _width = 1, _depth = 1;
-static GLfloat _gravity = -9.8 * 3.0;
+static GLfloat _gravity = -9.8 * 5.0;
 
 #define SHADOW_MAP_SIDE 512
 
@@ -113,7 +113,7 @@ static void mobileInit(GLfloat width, GLfloat depth) {
   _mobile.r = 0.8f;
   _mobile.x = 0.2;
   _mobile.z = 0.2;
-  _mobile.y = 3.0f;
+  _mobile.y = 1.5f;
   _mobile.vy = 1.0;
   _mobile.color[0] = 1.0f;
   _mobile.color[1] = 1.0f;
@@ -186,9 +186,9 @@ static void scene(GLboolean sm) {
 
 static void mobileMove(void) {
   GLfloat dt = get_dt(), d;
-  _mobile.y += _mobile.vy * dt;
+  _mobile.y += _mobile.vy * dt * 0.5;
 
-  if( (d = _mobile.y - _mobile.r) <= EPSILON && _state <= 6) {
+  if( (d = _mobile.y - _mobile.r) <= EPSILON && _state <= 5) {
     if(_mobile.vy < 0) {
       _mobile.vy = -_mobile.vy;
     }
@@ -217,40 +217,36 @@ static void draw(void) {
     _mobile.color[2] = 0.0f;
     t0 = t;
   }
-  else if(_state == 1 && dt == 2) {
+  else if(_state == 1 && dt == 1) {
     _state = 2;
     _mobile.color[0] = 1.0f;
     _mobile.color[1] = 1.0f;
     _mobile.color[2] = 1.0f;
     t0 = t;
   }
-  else if(_state == 2 && dt == 2) {
+  else if(_state == 2 && dt == 1) {
     _state = 3;
+    _mobile.color[0] = 0.5f;
+    _mobile.color[1] = 1.0f;
+    _mobile.color[2] = 1.0f;
     t0 = t;
   }
   else if(_state == 3 && dt == 2) {
     _state = 4;
     _mobile.color[0] = 0.5f;
-    _mobile.color[1] = 1.0f;
+    _mobile.color[1] = 0.5f;
     _mobile.color[2] = 1.0f;
     t0 = t;
   }
   else if(_state == 4 && dt == 2) {
     _state = 5;
-    _mobile.color[0] = 0.5f;
-    _mobile.color[1] = 0.5f;
-    _mobile.color[2] = 1.0f;
-    t0 = t;
-  }
-  else if(_state == 5 && dt == 2) {
-    _state = 6;
     _mobile.color[0] = 1.0f;
     _mobile.color[1] = 1.0f;
     _mobile.color[2] = 0.5f;
     t0 = t;
   }
-  else if(_state == 6 && dt == 2) {
-    _state = 7;
+  else if(_state == 5 && dt == 2) {
+    _state = 6;
     t0 = t;
   }
 
@@ -285,7 +281,7 @@ static void draw(void) {
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
   glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-  if(_state == 7) glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 static void mobileDraw(GLuint obj) {

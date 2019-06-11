@@ -11,12 +11,12 @@ static void resize(int w, int h);
 static void keydown(int keycode);
 
 static GL4DHanime _animations[] = {
-  { 14000, shadow,  NULL,  NULL },
+  { 11000, shadow,  NULL,  NULL },
   { 100,   shadow,  pmsphere,  transition_vide },
   { 24000, pmsphere,  NULL,  NULL },
   { 2000,  pmsphere,  color,  fondu },
   { 33500, color,  NULL,  NULL },
-  { 1500,  color,  cube,  fondud },
+  { 1500,  color,  cube,  fondui },
   { 38500, cube,  NULL,  NULL },
   { 100,   cube,  wave,  fondud },
   { 42000, wave,  NULL,  NULL },
@@ -24,7 +24,7 @@ static GL4DHanime _animations[] = {
   { 20000, musicFFT,  NULL,  NULL },
   { 100,   musicFFT,  credits,  transition_vide },
   { 5000,  credits,  NULL,  NULL },
-  // { 340000, cube,  NULL,  NULL },
+  // { 340000, wave,  NULL,  NULL },
   { 0,     NULL,  NULL,  NULL }
 };
 

@@ -121,13 +121,13 @@ static void draw(void) {
   } 
 
   a0 += 1000.0 * dt / 24.0;
-  if(prev_basses == 5 && _basses == 6 && _state < 2) _state++;
-  if(_spherePos[1] > 0) {  _swirl = 1; _spherePos[1] -= 0.005; }
-  if(_state >= 2 && _sphereSize < 0.50) { _sphereSize += 0.1; }
+  if(prev_basses == 5 && _basses == 6 && _state < 3) _state++;
+  if(_spherePos[1] > 0) {  _swirl = 1; _spherePos[1] -= 0.0065; }
+  if(_state >= 3 && _sphereSize < 0.50) { _sphereSize += 0.1; }
   if(_basses >= 13) _state++;
-  if(_state == 2) { _swirl = 0; _pixel = 1; a0 = 270.0; _pixelPrec += 0.5; }
+  if(_state == 3) { _swirl = 0; _pixel = 1; a0 = 270.0; _pixelPrec += 0.5; }
   if(_state >= 4) { _pixel = 0; }
-  if(_state >= 12 && _basses > prev_basses) { _state = -99; }
+  if(_state >= 14 && _basses >= prev_basses) { _state = -99; }
   prev_basses = _basses;
   if(!gdt)
     glDisable(GL_DEPTH_TEST);

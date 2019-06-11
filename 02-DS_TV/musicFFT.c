@@ -105,7 +105,7 @@ static void draw(void) {
   gl4dpClearScreenWith(RGB(0, 0, 0));
   gl4dpSetColor(white);
 
-  if(_state == 1 && dt >= 9) { _state++; t0 = t; } 
+  if(_state == 1 && dt >= 8) { _state++; t0 = t; } 
   else if(_state == 2 && _mobile.r <= 0) { _state++; }
 
   if(_state == 1) {

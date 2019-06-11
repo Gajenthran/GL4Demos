@@ -7,7 +7,7 @@ in  vec2 vsoTexCoord;
 out vec4 fragColor;
 
 
-void main(void) {  
+void main(void) {
   /* Mouvement des pics de la forme selon la musique */
   vec2 pos = vec2(0.5) - vsoTexCoord;
   float radius = length(pos) * 7.0;
@@ -21,8 +21,8 @@ void main(void) {
           vec3(smoothstep(0.0, f2 + 0.002, radius));
   
   vec4 colorCercle = vec4(1.0 - c, 0.0);
+  fragColor += colorCercle;
 
-  fragColor = colorCercle;
   if(wave != 0) {
     /* Création des ondes qui varient selon la musique */
     const float speed = .000001;
@@ -38,5 +38,10 @@ void main(void) {
     float pulse = exp(-10000.0 * z);
     vec4 colorWave = vec4(1.0, 1.0, 1.0, 1.0) * pow(clamp(1.0-abs(pos.y-(amp * base + pulse - 0.5)), 0.0, 1.0), 12.0);
     fragColor += colorWave;
+  } else {
+    pos = vec2(basses / 4.0) - vsoTexCoord * (basses / 2.0);
+    float u = sin((atan(pos.y, pos.x) + time * 0.003) * basses / 2.0) * 0.005 * basses;
+    float t = 0.01 * abs(sin(time)) * 5.0 / abs(0.5 + u - length(pos));
+    fragColor = mix(colorCercle, vec4(vec3(t), 1.0), 0.1);
   }
 }

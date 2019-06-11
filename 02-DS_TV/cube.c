@@ -10,10 +10,9 @@
 
 #define ECHANTILLONS 1024
 
-static void         init(int w, int h);
-static void         draw(void);
-static void         quit(void);
-
+static void init(int w, int h);
+static void draw(void);
+static void quit(void);
 
 typedef struct cube_t cube_t;
 struct cube_t {
@@ -97,15 +96,16 @@ static void draw(void) {
   glUseProgram(_pId);
   double i; 
   int it = 0;
-  if((_moyenne >= 2000 && _moyenne <= 2500 && 
-     prev_moy >= 2000 && prev_moy <= 2500 &&
-     _lumPos0[2] < -11.0) || 
+  if((_moyenne >= 2000 && _moyenne <= 7000 && 
+     prev_moy >= 2000 && prev_moy <= 7000 &&
+     _lumPos0[2] < -10.5) || 
      _lumPos0[2] < -12.0) {
     _lumPos0[2] = -4.0;
     _state++;
   } else if(!_state) {
     _lumPos0[2] -= 0.009;
   }
+
   prev_moy = _moyenne;
   for(i = 0; i < 2 * M_PI; i += 2 * M_PI / ECHANTILLONS) {
     gl4duPushMatrix(); {
@@ -151,12 +151,8 @@ static void draw(void) {
     _lumPos0[0] = sin(a) * 50;
     a += 2 * M_PI / ECHANTILLONS;
     if(a >= 2 * M_PI) a = 0.0;
-  }
-
-  if(_state == 2)
     _move = 1;
-  if(_state && _moyenne/1000 >= 10)
-    _state++;
+  }
 }
 
 static void quit(void) {
