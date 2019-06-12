@@ -1,12 +1,13 @@
 #version 330
-uniform vec4 lumPos;
-uniform int id, state;
-uniform vec2 steps;
-uniform int time;
-uniform float pixelPrec;
-uniform int swirl, pixel;
+uniform int basses;        // basses
+uniform int id;            // identifiant
+uniform int state;         // états de la démo
+uniform int time;          // temps
+uniform int swirl, pixel;  // modes
+uniform float pixelPrec;   // précision des pixels
+uniform vec2 steps;        // pas
+uniform vec4 lumPos;       // lumière  
 uniform sampler2D eday, egloss, ebump;
-uniform int basses;
 in  vec3 vsoNormal;
 in  vec3 vsoModPos;
 in  vec2 vsoTexCoord;
@@ -28,7 +29,7 @@ vec2 sobel(sampler2D map) {
 }
 
 void main(void) {
-  /* Ajout de lumières sur la texture (lumière diffuse, lumière
+  /* ajout de lumières sur la texture (lumière diffuse, lumière
    * ambiante et spéculaire) */ 
   if(id == 1) {
     const vec4 lum_diffus = vec4(1, 1, 0.9, 1);
@@ -52,7 +53,7 @@ void main(void) {
     fragColor = lum_diffus * color * Idiffuse + lum_amb * Iamb * color + lum_spec * Ispec;
 
     if(swirl != 0) {
-      /* Melange des éléments de la texture créant une sorte de tourbillon */
+      /* mélange des éléments de la texture créant une sorte de tourbillon */
       vec2 vecteur = vsoTexCoord - vec2(0.5) * 50;
       float distance = length(vecteur);
       float angle = atan(vecteur.y, vecteur.x);
@@ -60,7 +61,7 @@ void main(void) {
       vec2 tc = vec2(0.5) + vec2(distance * cos(angle), distance * sin(angle));
       fragColor = texture(eday, tc);
     } else if(pixel != 0) {
-        /* Pixellisation de la texture */
+        /* pixellisation de la texture */
         vec2 uv = vsoTexCoord;
         uv.x -= mod(uv.x, 1.0 / pixelPrec);
         uv.y -= mod(uv.y, 1.0 / pixelPrec);

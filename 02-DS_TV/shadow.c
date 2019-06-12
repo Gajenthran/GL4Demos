@@ -11,13 +11,7 @@
 
 
 #define EPSILON 0.00001f
-
-typedef struct mobile_t mobile_t;
-struct mobile_t {
-  GLfloat x, y, z, r;
-  GLfloat vy;
-  GLfloat color[4];
-};
+#define SHADOW_MAP_SIDE 512
 
 static void   init(int w, int h);
 static void   mobileInit(GLfloat width, GLfloat depth);
@@ -27,38 +21,63 @@ static void   mobileDraw(GLuint obj);
 static void   draw(void);
 static void   quit(void);
 
+/* !\brief structure représentant un cercle */
+typedef struct mobile_t mobile_t;
+struct mobile_t {
+  GLfloat x, y, z, r;
+  GLfloat vy;
+  GLfloat color[4];
+};
 
+/* !\brief écran de la démo */
 static GLuint _screen = 0;
-static int _wW, _wH;
+/* !\brief dimensions de la démo */
+static int _w, _h;
+/* !\brief basses de la démo */
 static int _basses = 0;
-static int _state = 0;
-
+/*!\brief identifiant du programme GLSL */
 static GLuint _shPID = 0;
+/*!\brief identifiant du programme GLSL pour la shadow map */
 static GLuint _smPID = 0;
-static GLuint _sphere = 0, _quad = 0;
-static GLfloat _plan_s = 15.0f;
-static GLuint _fbo = 0;
+/*!\brief couleur de la texture */
 static GLuint _colorTex = 0;
+/*!\brief profondeur de la texture */
 static GLuint _depthTex = 0;
-static GLuint _idTex = 0;
+/*!\brief texture pour la shadow map */
 static GLuint _smTex = 0;
-
+/*!\brief identifiant de la texture */
+static GLuint _idTex = 0;
+/*!\brief identifiant de la sphère de GL4Dummies */
+static GLuint _sphere = 0;
+/*!\brief identifiant du quadrilatère de GL4Dummies */
+static GLuint _quad = 0;
+/*!\brief taille du plan */
+static GLfloat _plan_s = 15.0f;
+/*!\brief frame buffer object */
+static GLuint _fbo = 0;
+/*!\brief coordonnées de la lumière */
 static GLfloat _lumpos[] = { -8.5, 8.5, 0, 1 };
+/*!\brief coordonnées des nuages */
 static GLfloat _cloudpos[3][4] = {
   {-3, 9, 0, 1},
   {2, 7, 0, 1},
   {6, 9, 0, 1}
 };
+/*!\brief cercle */
 static mobile_t _mobile;
-static GLfloat _width = 1, _depth = 1;
+/*!\brief longueur du plan */
+static GLfloat _width = 1;
+/*!\brief profondeur du plan */
+static GLfloat _depth = 1;
+/*!\brief intensité de pesenteur sur terre (gravité) */
 static GLfloat _gravity = -9.8 * 5.0;
+/*!\brief état de la démo */
+static int _state = 0;
 
-#define SHADOW_MAP_SIDE 512
-
-
+/*!\brief initialise les paramètres OpenGL et les données */
 static void init(int w, int h) {
-  _wW = w;
-  _wH = h;
+  _w = w;
+  _h = h;
   glEnable(GL_DEPTH_TEST);
   _shPID  = gl4duCreateProgram("<vs>shaders/shadow.vs", "<fs>shaders/shadow.fs", NULL);
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
@@ -74,7 +93,7 @@ static void init(int w, int h) {
   gl4duFrustumf(-1, 1, -1, 1, 1.5, 50.0);
   gl4duBindMatrix("cameraProjectionMatrix");
   gl4duLoadIdentityf();
-  gl4duFrustumf(-0.5, 0.5, -0.5 * _wH / _wW, 0.5 * _wH / _wW, 1.0, 50.0);
+  gl4duFrustumf(-0.5, 0.5, -0.5 * _h / _w, 0.5 * _h / _w, 1.0, 50.0);
   gl4duBindMatrix("modelMatrix");
 
   _sphere = gl4dgGenSpheref(30, 30);
@@ -91,23 +110,24 @@ static void init(int w, int h) {
   glBindTexture(GL_TEXTURE_2D, _colorTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW, _wH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _w, _h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
   glGenTextures(1, &_depthTex);
   glBindTexture(GL_TEXTURE_2D, _depthTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _wW, _wH, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _w, _h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
 
   glGenTextures(1, &_idTex);
   glBindTexture(GL_TEXTURE_2D, _idTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _wW, _wH, 0, GL_RED, GL_UNSIGNED_INT, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _w, _h, 0, GL_RED, GL_UNSIGNED_INT, NULL);
 
   glGenFramebuffers(1, &_fbo);
 }
 
+/*!\brief initialise des données du cercle */
 static void mobileInit(GLfloat width, GLfloat depth) {
   _width = width; _depth = depth;
   _mobile.r = 0.8f;
@@ -121,10 +141,13 @@ static void mobileInit(GLfloat width, GLfloat depth) {
   _mobile.color[3] = 1.0f;
 }
 
+/*!\brief dessine la scène de la démo */
 static void scene(GLboolean sm) {
   glEnable(GL_CULL_FACE);
+  int i;
   int time = SDL_GetTicks();
   GLfloat white[] = {255, 255, 255, 0}, lp[4];
+  /* dessine la shadow map */
   if(sm) {
     glCullFace(GL_FRONT);
     glUseProgram(_smPID);
@@ -144,7 +167,7 @@ static void scene(GLboolean sm) {
     gl4duBindMatrix("cameraViewMatrix");
     gl4duLoadIdentityf();
     gl4duLookAtf(0, 4, 22, 0, 2, 0, 0, 1, 0);
-    /* lumière positionnelle */
+    /* dessine la lumière positionnelle */
     mat = gl4duGetMatrixData();
     MMAT4XVEC4(lp, mat, _lumpos);
     MVEC4WEIGHT(lp);
@@ -160,7 +183,7 @@ static void scene(GLboolean sm) {
     glUniform1i(glGetUniformLocation(_shPID, "time"), time);
     if(_state >= 3) gl4dgDraw(_sphere);
 
-    int i;
+    /* dessine les nuages */
     for(i = 0; i < 3; i++) {
       gl4duPushMatrix(); {
         gl4duTranslatef(_cloudpos[i][0], _cloudpos[i][1], _cloudpos[i][2]);
@@ -173,6 +196,7 @@ static void scene(GLboolean sm) {
     }
   }
 
+  /* dessine le plan */
   gl4duPushMatrix(); {
     gl4duRotatef(-90, 1, 0, 0);
     gl4duScalef(_plan_s, _plan_s, _plan_s);
@@ -184,6 +208,7 @@ static void scene(GLboolean sm) {
   mobileDraw(_sphere);
 }
 
+/*!\brief calcule le mouvement des cercles */
 static void mobileMove(void) {
   GLfloat dt = get_dt(), d;
   _mobile.y += _mobile.vy * dt * 0.5;
@@ -197,6 +222,7 @@ static void mobileMove(void) {
   _mobile.vy += _gravity * dt;
 }
 
+/*!\brief récupère le temps entre l'ancienne frame et la nouvelle */
 static double get_dt(void) {
   static double t0 = 0, t, dt;
   t = SDL_GetTicks();
@@ -205,6 +231,7 @@ static double get_dt(void) {
   return dt;
 }
 
+/*!\brief dessine dans le contexte OpenGL actif. */
 static void draw(void) {
   static int t0 = 0, t, dt;
   t = SDL_GetTicks();
@@ -265,7 +292,7 @@ static void draw(void) {
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, _idTex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTex, 0);
-  glViewport(0, 0, _wW, _wH);
+  glViewport(0, 0, _w, _h);
 
   glDrawBuffers(1, &renderings[1]);
   glClear(GL_COLOR_BUFFER_BIT);
@@ -279,11 +306,12 @@ static void draw(void) {
 
 
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+  glBlitFramebuffer(0, 0, _w, _h, 0, 0, _w, _h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+  glBlitFramebuffer(0, 0, _w, _h, 0, 0, _w, _h, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
+/*!\brief dessine les cercles. */
 static void mobileDraw(GLuint obj) {
   GLint pId;
   glGetIntegerv(GL_CURRENT_PROGRAM, &pId);
@@ -299,6 +327,7 @@ static void mobileDraw(GLuint obj) {
   gl4dgDraw(obj);
 }
 
+/* !\brief libère les éléments OpenGL utilisés */
 static void quit(void) {
   if(_fbo) {
     glDeleteTextures(1, &_colorTex);

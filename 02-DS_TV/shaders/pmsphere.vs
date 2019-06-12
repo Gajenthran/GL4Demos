@@ -2,11 +2,11 @@
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
-uniform sampler2D ebump;
-uniform int basses;
-uniform int pixel;
-uniform int time;
-uniform int state;
+uniform int basses;      // basses
+uniform int pixel;       // mode "pixellisation"
+uniform int state;       // états de la démo
+uniform int time;        // temps
+uniform sampler2D ebump;   
 layout (location = 0) in vec3 vsiPosition;
 layout (location = 1) in vec3 vsiNormal;
 layout (location = 2) in vec2 vsiTexCoord;
@@ -18,6 +18,7 @@ out vec2 vsoTexCoord;
 void main(void) {
   vec3 vsiP = vsiPosition;
   float move;
+  /* ondulation de la sphère */
   if(pixel == 1) {
     move = 0.0000004;
   } else {

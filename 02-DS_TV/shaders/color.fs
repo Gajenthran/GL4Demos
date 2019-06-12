@@ -1,13 +1,14 @@
 #version 330
-uniform int time;
-uniform int basses, state;
-uniform int circle, side;
-uniform float color[4];
+uniform int time;          // temps 
+uniform int basses;        // basses
+uniform int state;         // état du mode
+uniform int circle, side;  // modes
+uniform float color[4];    // couleur des extrémités du cercle
 in  vec2 vsoTexCoord;
 out vec4 fragColor;
 
 void main(void) {
-  /* Cercle coupée en plusieurs parties avec une partie 
+  /* cercle coupée en plusieurs parties avec une partie 
    * colorée et l'autre non. */
   vec2 pos = abs(2.0 * (vsoTexCoord.xy) - vec2(1));
   float a = atan(pos.x, pos.y);
@@ -34,7 +35,7 @@ void main(void) {
   vec4 colorCircle = vec4(abs(1.0 / (1200.0/b * uv.y)) * c, 1.0);
   fragColor = colorCircle;
 
-  /* Dessin du rayon du cercle qui s'agrandira en fonction 
+  /* dessin du rayon du cercle qui s'agrandira en fonction 
    * de la musique */
   if(circle != 0) {
     if(state == -1) {

@@ -10,27 +10,49 @@ static void  init(int w, int h);
 static void  draw(void);
 static void  quit(void);
 
-static int _w, _h;
+/* !\brief écran de la démo */
 static GLuint _screen = 0;
-
+/* !\brief dimensions de la démo */
+static int _w, _h;
+/*!\brief identifiant de la texture */
 static GLuint _tId = 0;
+/*!\brief identifiant du programme GLSL */
 static GLuint _pId = 0;
-static int _swirl = 0;
-static int _state = 0;
-static GLfloat _pixelPrec = 1.0;
-static int _basses = 0, _pixel = 0;
-static GLfloat _sphereSize = 0.10, _spherePos[3] = {0.0, 1.0, -3.0};
-static int _nbStars = 200;
-static GLfloat _starsPos[200] = {0.0};
+/*!\brief identifiant de la sphère de GL4Dummies */
 static GLuint _sphere = 0;
+/*!\brief dimension de la sphère "pacman" */
+static GLfloat _sphereSize = 0.10;
+/*!\brief coordonnées de la sphère "pacman" */
+static GLfloat _spherePos[3] = {0.0, 1.0, -3.0};
+/*!\brief nombre de sphères "étoiles" */
+static int _nbStars = 200;
+/*!\brief coordonnées des sphères "étoiles" */
+static GLfloat _starsPos[200] = {0.0};
+/*!\brief longitudes et latitudes de la sphère */
 static GLuint _longitudes = 200, _latitudes = 200;
+/*!\brief coordonnées de la lumière */
 static GLfloat _lumPos0[4] = {-15.1, 20.0, 20.7, 1.0};
-
+/*!\brief fichier contenant la texture */
 static const char * _texture_filename = "images/pacman.png";
+/*!\brief nom de la texture */
 static const char * _sampler_name = "pacman";
+/*!\brief précision concernant la représentation de la texture */
+static GLfloat _pixelPrec = 1.0;
+/* !\brief basses de la démo */
+static int _basses = 0;
+/*!\brief mode _pixel pour la pixellisation de la texture */
+static int _pixel = 0;
+/*!\brief mode _swirl pour le mélange des éléments d'une texture */
+static int _swirl = 0;
+/*!\brief état de la démo */
+static int _state = 0;
 
+/*!\brief initialise les paramètres OpenGL et les données */
 static void init(int w, int h) {
   _w = w; _h = h;
+  int i;
+
+  /* initialise les images */
   if(!_tId) {
     glGenTextures(1, &_tId);
     SDL_Surface * t;
@@ -53,15 +75,17 @@ static void init(int w, int h) {
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
   _sphere = gl4dgGenSpheref(_longitudes, _latitudes);
 
-  int i;
+  /* initialise les coordonnées des sphères "étoiles" */
   for(i = 0; i < _nbStars; i++)
     _starsPos[i] = gl4dmURand() * 3.0 - 1.5;
 }
 
+/*!\brief dessine dans le contexte OpenGL actif. */
 static void draw(void) {
   static int prev_basses = 0.0;
   static GLfloat a0 = 0.0;
   static Uint32 t0 = 0;
+  int i;
   GLint vp[4];
   GLfloat dt = 0.0, steps[2] = {1.0f / _w, 1.0f / _h};
   GLfloat lumPos[4], *mat;
@@ -85,6 +109,7 @@ static void draw(void) {
   mat = gl4duGetMatrixData();
   MMAT4XVEC4(lumPos, mat, _lumPos0);
 
+  /* dessine la sphère "pacman" */
   glUseProgram(_pId);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, _tId);
@@ -109,7 +134,7 @@ static void draw(void) {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  int i;
+  /* dessine les sphères "étoiles" */
   for(i = 0; i < _nbStars/2; i++) {
     gl4duPushMatrix(); {
       gl4duTranslatef(_starsPos[i], _starsPos[i + 1], -3.0);
@@ -129,10 +154,12 @@ static void draw(void) {
   if(_state >= 4) { _pixel = 0; }
   if(_state >= 14 && _basses >= prev_basses) { _state = -99; }
   prev_basses = _basses;
+
   if(!gdt)
     glDisable(GL_DEPTH_TEST);
 }
 
+/* !\brief libère les éléments OpenGL utilisés */
 static void quit(void) {
   if(_tId) {
     glDeleteTextures(1, &_tId);

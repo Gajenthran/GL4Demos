@@ -1,9 +1,10 @@
 #version 330 core
-uniform vec4 couleur, lumpos;
-uniform int id;
+uniform int id;           // identifiant
+uniform int state;        // états de la démo
+uniform int time;         // temps
+uniform vec4 couleur;     // couleur
+uniform vec4 lumpos;      // lumière
 uniform sampler2D smTex;
-uniform int time;
-uniform int state;
 in  vec4 vsoNormal;
 in  vec4 vsoMVPos;
 in  vec4 vsoSMCoord;
@@ -11,14 +12,17 @@ in  vec2 vsoTexCoord;
 layout (location = 0) out vec4 fragColor;
 layout (location = 1) out vec4 fragId;
 
+/* création d'un anneau */
 float ring(vec2 p) {
     float r = log(sqrt(length(p)));
     return abs(mod(9.0 * r, 3.0) - 2.0);
 }
 
 void main(void) {
+  /* dessine le cercle en jaune pour le soleil (id = 2) */
   if(id == 2) {
     fragColor = vec4(1, 1, 0.5, 1);
+  /* dessine le cercle en gris pour le nuage (id = 4) */
   } else if(id == 4) {
     fragColor = vec4(0.5, 0.5, 0.5, 1);
   } else {
@@ -38,11 +42,14 @@ void main(void) {
     }
     if(texture(smTex, projCoords.xy).r  <  projCoords.z)
       diffuse *= 0.0;
-
+      
+    /* dessine la texture uniquement */
     if(state < 3)
       fragColor = vec4((couleur.rgb), couleur.a);
+    /* dessine la texture avec la diffuse */
     else
       fragColor = vec4((couleur.rgb * diffuse), couleur.a);
+    /* dessine des anneaux progressives sur le cercle (id = 3) */
     if(id == 3) {
       vec2 uv = (vsoTexCoord - 0.5);
       vec3 color = vec3(0.0);

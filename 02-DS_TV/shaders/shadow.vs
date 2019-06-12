@@ -5,8 +5,8 @@ uniform mat4 cameraViewMatrix;
 uniform mat4 cameraProjectionMatrix;
 uniform mat4 lightViewMatrix;
 uniform mat4 lightProjectionMatrix;
-uniform int id;
-uniform int time;
+uniform int id;    // identifiant
+uniform int time;  // temps
 layout (location = 0) in vec3 vsiPosition;
 layout (location = 1) in vec3 vsiNormal;
 layout (location = 2) in vec2 vsiTexCoord;
@@ -18,6 +18,8 @@ out vec2 vsoTexCoord;
 
 void main(void) {
   vec3 vsiP = vsiPosition;
+  /* modification de la forme de la sphère (nuages et soleil) pour donner une 
+   * impression de dessin */
   if(id == 2 || id == 4) {
     vsiP *= 2;
     float theta = atan(vsiP.x, vsiP.y);

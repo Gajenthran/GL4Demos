@@ -1,10 +1,10 @@
 #version 330
 
-uniform uint frame;
-uniform vec2 step;
-uniform float amplitude;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
+uniform float amplitude;   // amplitude
+uniform uint frame;        // temps
+uniform vec2 step;         // pas
 uniform sampler2D tex;
 layout (location = 0) in vec3 vsiPosition;
 layout (location = 1) in vec3 vsiNormal;

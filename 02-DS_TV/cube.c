@@ -14,6 +14,7 @@ static void init(int w, int h);
 static void draw(void);
 static void quit(void);
 
+/* !\brief structure représentant un cube */
 typedef struct cube_t cube_t;
 struct cube_t {
   float x, y, z;
@@ -21,25 +22,35 @@ struct cube_t {
   GLfloat c[4];
 };
 
+/* !\brief écran de la démo */
 static int _screen = 0;
-static int _wW, _wH;
-
+/* !\brief dimensions de la démo */
+static int _w, _h;
+/*!\brief identifiants du programme GLSL */
 static GLuint _pId = 0, _pId2 = 0;
+/*!\brief identifiant du cube de GL4Dummies */
 static GLuint _cube = 0;
-static int _nbCubes = 0;
-static cube_t * _cubes = NULL;
+/*!\brief identifiant de la grille de GL4Dummies */
 static GLuint _grid = 0;
-static GLuint _move = 0;
-static int _moyenne = 0;
-static int _gridWidth = 255;
-static int _gridHeight = 255;
-
+/*!\brief représentation des cubes */
+static cube_t * _cubes = NULL;
+/*!\brief nombre de cubes */
+static int _nbCubes = 0;
+/*!\brief dimensions de la grille */
+static int _gridWidth = 255, _gridHeight = 255;
+/*!\brief coordonnées de la lumière */
 static GLfloat _lumPos0[4] = {0.0, 0.0, -4.0, 1.0};
+/*!\brief moyenne des fréquences du son */
+static int _moyenne = 0;
+/*!\brief mode _move pour le mouvement des cubes */
+static GLuint _move = 0;
+/*!\brief état de la démo */
 static int _state = 0;
 
+/*!\brief initialise les paramètres OpenGL et les données */
 static void init(int w, int h) {
-  _wW = w;
-  _wH = h;
+  _w = w;
+  _h = h;
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   _pId  = gl4duCreateProgram("<vs>shaders/cube.vs", "<fs>shaders/cube.fs", NULL);
   _pId2 = gl4duCreateProgram("<vs>shaders/sol.vs", "<fs>shaders/sol.fs", NULL);
@@ -50,11 +61,12 @@ static void init(int w, int h) {
 
   double i;
   int it = 0;
-  for(i = 0; i < 2 * M_PI; i += 2 * M_PI / ECHANTILLONS) {
+  /* calcul du nombre de cubes */
+  for(i = 0; i < 2 * M_PI; i += 2 * M_PI / ECHANTILLONS)
     _nbCubes++;
-  }
-
   _cubes = malloc(_nbCubes * sizeof *_cubes);
+
+  /* initialisation des données des cubes */
   for(i = 0; i < 2 * M_PI; i += 2 * M_PI / ECHANTILLONS) {
     _cubes[it].x = cos(i);
     _cubes[it].y = sin(i);
@@ -69,10 +81,13 @@ static void init(int w, int h) {
   }
 }
 
+/*!\brief dessine dans le contexte OpenGL actif. */
 static void draw(void) {
   static Uint32 t0 = 0;
   static double a = 0.0;
   static int prev_moy = 0;
+  double i; 
+  int it = 0;
   GLfloat dt = 0.0;
   GLfloat steps2[2] = { 2.0 / _gridWidth, 2.0 / _gridHeight};
   GLfloat lumPos[4], *mat;
@@ -94,19 +109,8 @@ static void draw(void) {
   mat = gl4duGetMatrixData();
   MMAT4XVEC4(lumPos, mat, _lumPos0);
   glUseProgram(_pId);
-  double i; 
-  int it = 0;
-  if((_moyenne >= 2000 && _moyenne <= 7000 && 
-     prev_moy >= 2000 && prev_moy <= 7000 &&
-     _lumPos0[2] < -10.5) || 
-     _lumPos0[2] < -12.0) {
-    _lumPos0[2] = -4.0;
-    _state++;
-  } else if(!_state) {
-    _lumPos0[2] -= 0.009;
-  }
 
-  prev_moy = _moyenne;
+  /* dessine les cubes */
   for(i = 0; i < 2 * M_PI; i += 2 * M_PI / ECHANTILLONS) {
     gl4duPushMatrix(); {
       GLfloat x = _cubes[it].x;
@@ -125,13 +129,14 @@ static void draw(void) {
       glUniform4fv(glGetUniformLocation(_pId, "lumPos"), 1, lumPos);
       gl4duSendMatrices();
     } gl4duPopMatrix();
-    it++;
     gl4dgDraw(_cube);
+    it++;
   }
 
   glActiveTexture(GL_TEXTURE0);
   glUseProgram(_pId2);
   gl4duLoadIdentityf();
+  /* dessine les grilles */
   for(i = 0; i < 2; i++) {
     gl4duPushMatrix(); {
       gl4duTranslatef(0, i ? -1 : 1, -3);
@@ -146,15 +151,29 @@ static void draw(void) {
     gl4dgDraw(_grid);
   }
 
+  /* modifie la coordonnée Y de la lumière */
+  if((_moyenne >= 2000 && _moyenne <= 7000 && 
+     prev_moy >= 2000 && prev_moy <= 7000 &&
+     _lumPos0[2] < -10.5) || 
+     _lumPos0[2] < -12.0) {
+    _lumPos0[2] = -4.0;
+    _state++;
+  } else if(!_state) {
+    _lumPos0[2] -= 0.009;
+  }
+
+  /* modifie les coordonnées de la lumière */
   if(_state) {
-    _lumPos0[0] = cos(a) * 50;
-    _lumPos0[0] = sin(a) * 50;
-    a += 2 * M_PI / ECHANTILLONS;
+    _lumPos0[0] = cos(a) * 100;
+    _lumPos0[1] = sin(a) * 100;
+    a += 20 * M_PI / ECHANTILLONS;
     if(a >= 2 * M_PI) a = 0.0;
     _move = 1;
   }
+  prev_moy = _moyenne;
 }
 
+/* !\brief libère les éléments OpenGL utilisés */
 static void quit(void) {
   if(_screen) {
     gl4dpSetScreen(_screen);

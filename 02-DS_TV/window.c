@@ -24,14 +24,13 @@ static GL4DHanime _animations[] = {
   { 20000, musicFFT,  NULL,  NULL },
   { 100,   musicFFT,  credits,  transition_vide },
   { 5000,  credits,  NULL,  NULL },
-  // { 340000, wave,  NULL,  NULL },
   { 0,     NULL,  NULL,  NULL }
 };
 
 static GLfloat _dim[] = {1024, 768};
 
 int main(int argc, char ** argv) {
-  if(!gl4duwCreateWindow(argc, argv, "PG2D1819S2 - TV", 
+  if(!gl4duwCreateWindow(argc, argv, "PG2D1819S2 - Visualizer", 
 			 0, 0, 
 			 _dim[0], _dim[1],
 			 GL4DW_RESIZABLE | GL4DW_SHOWN))
@@ -47,7 +46,7 @@ int main(int argc, char ** argv) {
   return 0;
 }
 
-static void init(void) {
+static void init(void) { 
   glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
   gl4dhInit(_animations, _dim[0], _dim[1], animationsInit);
   resize(_dim[0], _dim[1]);

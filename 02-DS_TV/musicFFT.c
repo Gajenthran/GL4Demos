@@ -10,31 +10,43 @@
 #include <GL4D/gl4dh.h>
 #include "audioHelper.h"
 
+#define ECHANTILLONS 1024
+
 static void init(int w, int h);
 static void audio(void);
 static void draw(void);
 static void drawPixelWithThickness(int x, int y, int t);
 static void quit(void);
 
-#define ECHANTILLONS 1024
-
+/* !\brief structure représentant un cercle */
 typedef struct mobile_t mobile_t;
 struct mobile_t {
   float x, y, r;
   GLuint c;
 };
 
-static Sint16 _hauteurs[ECHANTILLONS];
+/* !\brief écran de la démo */
 static GLuint _screen = 0;
-static int _basses = 0;
-static int _gap = 0, _state = 0, _radius;
+/* !\brief dimensions de la démo */
 static int _w, _h;
-static mobile_t _mobile;
+/* !\brief hauteurs des echantillons du son */
+static Sint16 _hauteurs[ECHANTILLONS];
+/* !\brief rayon du cercle (initialisation) */
+static int _radius;
+/* !\brief couleur blanche */
 static Uint32 white = RGB(255, 255, 255);
+/* !\brief cercle */
+static mobile_t _mobile;
+/* !\brief basses de la démo */
+static int _basses = 0;
+/*!\brief état de la démo */
+static int _state = 0;
 
+/* !\brief données pour la lib FFTW */
 static fftw_complex * _in4fftw = NULL, * _out4fftw = NULL;
 static fftw_plan _plan4fftw = NULL;
 
+/*!\brief initialise les paramètres OpenGL et les données */
 static void init(int w, int h) {
   _w = w; _h = h;
   /* préparation des conteneurs de données pour la lib FFTW */
@@ -45,12 +57,15 @@ static void init(int w, int h) {
   assert(_out4fftw);
   _plan4fftw = fftw_plan_dft_1d(ECHANTILLONS, _in4fftw, _out4fftw, FFTW_FORWARD, FFTW_ESTIMATE);
   assert(_plan4fftw);
+
+  /* initialisation des données du cercle */
   _mobile.x = _w/2;
   _mobile.y = _h/2;
   _mobile.r = _radius = 100;
   _mobile.c = RGB(255, 255, 255);
 }
 
+/* !\brief dessine un point selon l'épaisseur donnée */
 static void drawPixelWithThickness(int x, int y, int t) {
   int i;
   for(i = 0; i < t; i++) {
@@ -60,7 +75,9 @@ static void drawPixelWithThickness(int x, int y, int t) {
   }
 }
 
+/* !\brief transforme le cercle en une ligne (en aplatissant le cercle) */
 static void circleToLine(void) {
+  static int _gap = 0; 
   _mobile.r = _radius - _gap;
   if(_mobile.r > 0.0)
     _gap += 1.5;
@@ -73,6 +90,8 @@ static void circleToLine(void) {
   }
 }
 
+/* !\brief place des pics sur les extremités du cercle qui s'aggrandiront en fonction
+ * de la musique */
 static void circleExtremities(void) {
   srand(time(NULL));
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -94,6 +113,7 @@ static void circleExtremities(void) {
   }
 }
 
+/*!\brief dessine dans le contexte OpenGL actif. */
 static void draw(void) {
   int i;
   static int t0 = 0, t, dt;
@@ -125,6 +145,7 @@ static void draw(void) {
   gl4dpUpdateScreen(NULL);
 }
 
+/* !\brief initialise les paramètres de la lib FFTW */
 static void audio(void) {
   if(_plan4fftw) {
     int i, j, l = MIN(ahGetAudioStreamLength() >> 1, ECHANTILLONS);
@@ -141,6 +162,7 @@ static void audio(void) {
   }
 }
 
+/* !\brief libère les éléments OpenGL utilisés */
 static void quit(void) {
   if(_screen) {
     gl4dpSetScreen(_screen);

@@ -1,14 +1,14 @@
 #version 330
-uniform int time;
-uniform int basses;
-uniform float line;
-uniform int wave;
+uniform int basses;  // basses
+uniform int time;    // temps
+uniform int wave;    // mode "wave" pour "représentation graphique"
+uniform float line;  // nombre de lignes pour la construction du cercle
 in  vec2 vsoTexCoord;
 out vec4 fragColor;
 
 
 void main(void) {
-  /* Mouvement des pics de la forme selon la musique */
+  /* mouvement des pics de la forme selon la musique */
   vec2 pos = vec2(0.5) - vsoTexCoord;
   float radius = length(pos) * 7.0;
 
@@ -24,7 +24,7 @@ void main(void) {
   fragColor += colorCercle;
 
   if(wave != 0) {
-    /* Création des ondes qui varient selon la musique */
+    /* création des ondes qui varient selon la musique */
     const float speed = .000001;
     const float rate = 15.0;
     const float amp = 0.19;
@@ -39,6 +39,7 @@ void main(void) {
     vec4 colorWave = vec4(1.0, 1.0, 1.0, 1.0) * pow(clamp(1.0-abs(pos.y-(amp * base + pulse - 0.5)), 0.0, 1.0), 12.0);
     fragColor += colorWave;
   } else {
+    /* création du cercle (non remplie) dont les extrémités seront ondulées selon la musique */
     pos = vec2(basses / 4.0) - vsoTexCoord * (basses / 2.0);
     float u = sin((atan(pos.y, pos.x) + time * 0.003) * basses / 2.0) * 0.005 * basses;
     float t = 0.01 * abs(sin(time)) * 5.0 / abs(0.5 + u - length(pos));
