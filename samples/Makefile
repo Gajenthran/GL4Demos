@@ -1,7 +1,7 @@
 SHELL = /bin/sh
 CC = g++
-CFLAGS = -Wall -std=c++14 -O3
-CPPFLAGS = -I../include
+CFLAGS = -Wall -std=c++14 -O3 -g
+CPPFLAGS = -I. -I../include
 LDFLAGS =../lib/libLeap.dylib # -pthread 
 SRC = sample.cpp
 OBJ = $(SRC:.cpp=.o)
@@ -9,7 +9,7 @@ OBJ = $(SRC:.cpp=.o)
 CPPFLAGS += -I/usr/local/include
 LDFLAGS += -L/usr/local/lib
 CPPFLAGS += $(shell sdl2-config --cflags)
-LDFLAGS  += -lGL4Dummies $(shell sdl2-config --libs)
+LDFLAGS  += -lm -framework OpenGL -lGL4Dummies $(shell sdl2-config --libs)
 
 %.o:	%.cpp
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
