@@ -14,15 +14,15 @@ LDFLAGS  += -lm -framework OpenGL -lGL4Dummies $(shell sdl2-config --libs)
 %.o:	%.cpp
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
-example: 	$(OBJ)
+sample: 	$(OBJ)
 	$(CC) $(LDFLAGS) $(OBJ) -o $@
 
 ifeq ($(OS), Darwin)
-	install_name_tool -change @loader_path/libLeap.dylib ../lib/libLeap.dylib example
+	install_name_tool -change @loader_path/libLeap.dylib ../lib/libLeap.dylib sample
 endif
 
 clean:
-	rm -rf *.o example
+	rm -rf *.o sample
 
 # SHELL = /bin/sh
 # OS = $(shell uname)

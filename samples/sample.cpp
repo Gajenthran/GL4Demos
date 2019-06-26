@@ -41,8 +41,8 @@ struct hand {
 
 enum gesture_e {
   LM_PEN = 0,
-  LM_SWIP_LEFT,
-  LM_SWIP_RIGHT,
+  LM_SWIP_UP,
+  LM_SWIP_DOWN,
   LM_TAP,
   LM_GESTURES
 };
@@ -139,19 +139,25 @@ void lmListener::onFrame(const Controller& controller) {
             << ", tools: " << frame.tools().count()
             << ", gestures: " << frame.gestures().count() << std::endl; */
 
+  int nbHands = frame.hands().count();
   HandList hands = frame.hands();
+
+  Vector lhandPalmPosition, lhandPalmNormal;
+
+  // TODO: boucle for à retirer !
   for (HandList::const_iterator hl = hands.begin(); hl != hands.end(); ++hl) {
     // Get the first hand
-    const Hand hand = *hl;
+    const Hand hand = hands[0];
+    const Hand hand2 = hands[1];
+
     _hand[0].palmPos[0] = hand.palmPosition()[0];
     _hand[0].palmPos[1] = hand.palmPosition()[1];
     _hand[0].palmPos[2] = hand.palmPosition()[2];
     /* std::string handType = hand.isLeft() ? "Left hand" : "Right hand";
     std::cout << std::string(2, ' ') << handType << ", id: " << hand.id()
               << ", palm position: " << hand.palmPosition() << std::endl; */
-    // Get the hand's normal vector and direction
     
-    // const Vector normal = hand.palmNormal();
+    // Get the hand's normal vector and direction
     // const Vector direction = hand.direction();
 
     // Calculate the hand's pitch, roll, and yaw angles
@@ -167,17 +173,40 @@ void lmListener::onFrame(const Controller& controller) {
 
     // Get fingers
     const FingerList fingers = hand.fingers().extended();
-    printf("Doigts: %d\n", fingers.count());
+    // printf("Doigts: %d\n", fingers.count());
 
-    // LM: gestion de l'index levé
+    // gestion de l'index levé (LM)
     int extendedFingers = fingers.count();
     for (FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); ++fl) {
       const Finger finger = *fl;
-      if((int)finger.type() == LM_INDEX && extendedFingers == 1) {
+      if((int)finger.type() == LM_INDEX && extendedFingers == 1 && nbHands == 1) {
         _lmGestures[LM_INDEX] = 1;
       } else {
         _lmGestures[LM_INDEX] = 0;
       }
+
+      // gestion deux mains vers le haut (LM)
+      float thresholdY = 100.0f;
+      float diffY = fabs(hand.palmPosition()[1] - hand2.palmPosition()[1]);
+      float hPalmNormal = hand.palmNormal()[1], h2PalmNormal = hand2.palmNormal()[1];
+      float hPalmVelocity = hand.palmVelocity()[1], h2PalmVelocity = hand2.palmVelocity()[1];
+
+      if(diffY < thresholdY && 
+         hPalmNormal > 0 && 
+         h2PalmNormal > 0 && 
+         hPalmVelocity > 500.0 && 
+         h2PalmVelocity > 500.0) {
+        _lmGestures[LM_SWIP_UP] = 1;
+      } else if(diffY < thresholdY && 
+              hPalmNormal < 0 && 
+              h2PalmNormal < 0 &&
+              -hPalmVelocity > 500.0 && 
+              -h2PalmVelocity > 500.0) {
+        _lmGestures[LM_SWIP_DOWN] = 1;
+      } else {
+        _lmGestures[LM_SWIP_UP] = _lmGestures[LM_SWIP_DOWN] = 0;
+      }
+
       /* std::cout << std::string(4, ' ') <<  fingerNames[finger.type()]
                 << " finger, id: " << finger.id()
                 << ", length: " << finger.length()
@@ -192,7 +221,7 @@ void lmListener::onFrame(const Controller& controller) {
                   << ", end: " << bone.nextJoint()
                   << ", direction: " << bone.direction() << std::endl; */
       }
-    } 
+    }
   }
 }
 
@@ -210,10 +239,21 @@ static void resize(int w, int h) {
 }
 
 static void draw(void) {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  if(_lmGestures[LM_INDEX])
+    std::cout << "INDEX ON" << std::endl;
+
+  if(_lmGestures[LM_SWIP_UP])
+    std::cout << "SWIP-UP ON " << std::endl;
+
+  if(_lmGestures[LM_SWIP_DOWN])
+    std::cout << "SWIP-DOWN ON " << std::endl;
+
+
   if(!_lmGestures[LM_INDEX])
     return;
 
-  std::cout << "Index On\n";
   GLfloat red[] = {1, 0, 0, 1};
           // white[] = {1, 1, 1, 1}, 
           // yellow[] = {1, 1, 0, 1},
