@@ -18,6 +18,11 @@
 #include <cstring>
 #include "Leap.h"
 
+/*
+ * TODO:
+ * Indiquer les mains (isLeft)
+ * Boucle for inutile
+ */
 using namespace Leap;
 
 static void init(void);
@@ -28,14 +33,10 @@ static void quit(void);
 typedef struct hand hand_t;
 
 struct hand {
-  Vector wristPosition;
   Vector palmPosition;
-  Vector palmDirection;
   GLfloat palmPos[3];
-  GLfloat palmDir[3];
-  GLfloat palmNorm[3];
-  GLfloat thumbDist;
-  FingerList fingers;
+  Vector indexPosition;
+  GLfloat indexPos[3];
 };
 
 
@@ -43,6 +44,8 @@ enum gesture_e {
   LM_PEN = 0,
   LM_SWIP_UP,
   LM_SWIP_DOWN,
+  LM_ERASER,
+  LM_OPTIONS,
   LM_TAP,
   LM_GESTURES
 };
@@ -54,6 +57,14 @@ enum finger_e {
   LM_RING,
   LM_PINKY,
   LM_FINGERS
+};
+
+enum bones_e {
+  LM_FMETACARPAL,
+  LM_FPROXIMAL,
+  LM_FMIDDLE,
+  LM_FDISTAL,
+  LM_FBONES
 };
 
 static int _lmGestures[LM_GESTURES] = {0};
@@ -130,6 +141,10 @@ void lmListener::onServiceDisconnect(const Controller& controller) {
 
 
 void lmListener::onFrame(const Controller& controller) {
+  for(int i = 0; i < LM_GESTURES; i++) {
+    _lmGestures[i] = 0;
+  }
+
   // Get the most recent frame and report some basic information
   const Frame frame = controller.frame();
   /* std::cout << "Frame id: " << frame.id()
@@ -149,10 +164,13 @@ void lmListener::onFrame(const Controller& controller) {
     // Get the first hand
     const Hand hand = hands[0];
     const Hand hand2 = hands[1];
+  
+    if(!hand.isLeft() && hand.palmNormal()[2] > 0)
+      _lmGestures[LM_OPTIONS] = 1;
 
-    _hand[0].palmPos[0] = hand.palmPosition()[0];
-    _hand[0].palmPos[1] = hand.palmPosition()[1];
-    _hand[0].palmPos[2] = hand.palmPosition()[2];
+    _hand[0].palmPosition = hand.palmPosition();
+    _hand[1].palmPosition = hand2.palmPosition();
+
     /* std::string handType = hand.isLeft() ? "Left hand" : "Right hand";
     std::cout << std::string(2, ' ') << handType << ", id: " << hand.id()
               << ", palm position: " << hand.palmPosition() << std::endl; */
@@ -175,14 +193,30 @@ void lmListener::onFrame(const Controller& controller) {
     const FingerList fingers = hand.fingers().extended();
     // printf("Doigts: %d\n", fingers.count());
 
-    // gestion de l'index levé (LM)
     int extendedFingers = fingers.count();
+
+    // gestion de la gomme en fermant la main (LM)
+    if(extendedFingers == 0 && nbHands == 1) {
+      _lmGestures[LM_ERASER] = 1;
+    } else {
+      _lmGestures[LM_ERASER] = 0;
+    }
+
+    if(extendedFingers != 1 || nbHands != 1) {
+      _lmGestures[LM_PEN] = 0;
+    }
+
     for (FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); ++fl) {
       const Finger finger = *fl;
+      
+      // gestion de l'index levé (LM)
       if((int)finger.type() == LM_INDEX && extendedFingers == 1 && nbHands == 1) {
-        _lmGestures[LM_INDEX] = 1;
+        Bone::Type boneType = static_cast<Bone::Type>(LM_FDISTAL);
+        Bone bone = finger.bone(boneType);
+        _hand[0].indexPosition = bone.nextJoint();
+        _lmGestures[LM_PEN] = 1;
       } else {
-        _lmGestures[LM_INDEX] = 0;
+        _lmGestures[LM_PEN] = 0;
       }
 
       // gestion deux mains vers le haut (LM)
@@ -240,8 +274,14 @@ static void resize(int w, int h) {
 
 static void draw(void) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
+  if(_lmGestures[LM_ERASER])
+    std::cout << "ERASER ON" << std::endl;
 
-  if(_lmGestures[LM_INDEX])
+  if(_lmGestures[LM_OPTIONS])
+    std::cout << "OPTIONS ON" << std::endl;
+
+  if(_lmGestures[LM_PEN])
     std::cout << "INDEX ON" << std::endl;
 
   if(_lmGestures[LM_SWIP_UP])
@@ -251,21 +291,21 @@ static void draw(void) {
     std::cout << "SWIP-DOWN ON " << std::endl;
 
 
-  if(!_lmGestures[LM_INDEX])
-    return;
+  // if(!_lmGestures[LM_INDEX])
+  //   return;
 
   GLfloat red[] = {1, 0, 0, 1};
           // white[] = {1, 1, 1, 1}, 
           // yellow[] = {1, 1, 0, 1},
           // cyan[] = {0, 1, 1, 1}; 
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   gl4duBindMatrix("modelViewMatrix");
   gl4duLoadIdentityf();
   glUseProgram(_pId);
   gl4duTranslatef(
-    _hand[0].palmPos[0] * 0.01, 
-    _hand[0].palmPos[1] * 0.01 - 1.5, 
+    _hand[0].indexPosition[0] * 0.01,
+    _hand[0].indexPosition[1] * 0.01,
     -10.0);
   gl4duSendMatrices();
   glUniform4fv(glGetUniformLocation(_pId, "color"), 1, red);
