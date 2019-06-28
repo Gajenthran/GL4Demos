@@ -34,9 +34,7 @@ typedef struct hand hand_t;
 
 struct hand {
   Vector palmPosition;
-  GLfloat palmPos[3];
   Vector indexPosition;
-  GLfloat indexPos[3];
 };
 
 
@@ -67,13 +65,11 @@ enum bones_e {
   LM_FBONES
 };
 
-static int _lmGestures[LM_GESTURES] = {0};
-static const std::string boneNames[] = {"Metacarpal", "Proximal", "Middle", "Distal"};
-static const std::string stateNames[] = {"STATE_INVALID", "STATE_START", "STATE_UPDATE", "STATE_END"};
 static int _wW = 1024, _wH = 768;
 static GLuint _pId = 0;
 static hand_t _hand[2];
-static GLuint _cylinder = 0, _sphere = 0;
+static GLuint _cylinder = 0, _sphere = 0, _cube = 0;
+static int _lmGestures[LM_GESTURES] = {0};
 
 class lmListener : public Listener {
   public:
@@ -165,8 +161,8 @@ void lmListener::onFrame(const Controller& controller) {
     const Hand hand = hands[0];
     const Hand hand2 = hands[1];
   
-    if(!hand.isLeft() && hand.palmNormal()[2] > 0)
-      _lmGestures[LM_OPTIONS] = 1;
+    // std::cout << hand.direction()[2] << std::endl;
+    // std::cout << hand.palmVelocity()[2] << std::endl;
 
     _hand[0].palmPosition = hand.palmPosition();
     _hand[1].palmPosition = hand2.palmPosition();
@@ -191,9 +187,11 @@ void lmListener::onFrame(const Controller& controller) {
 
     // Get fingers
     const FingerList fingers = hand.fingers().extended();
-    // printf("Doigts: %d\n", fingers.count());
+    const FingerList fingers2 = hand2.fingers().extended();
+
 
     int extendedFingers = fingers.count();
+    int extendedFingers2 = fingers2.count();
 
     // gestion de la gomme en fermant la main (LM)
     if(extendedFingers == 0 && nbHands == 1) {
@@ -208,7 +206,22 @@ void lmListener::onFrame(const Controller& controller) {
 
     for (FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); ++fl) {
       const Finger finger = *fl;
-      
+
+      // gestion d'options (LM)
+      if(!hand.isLeft() && hand.palmNormal()[2] > 0)
+        _lmGestures[LM_OPTIONS] = 1;
+
+      // std::cout << nbHands << std::endl;
+      for(int i = 0; i < extendedFingers2; i++) {
+        // gestion de sélection-options (LM)
+        if(_lmGestures[LM_OPTIONS] &&
+           hand2.isLeft() &&
+           extendedFingers2 == 1 &&
+           (int)fingers2[i].type() == LM_INDEX &&
+           hand2.palmVelocity()[2] > 100)
+          _lmGestures[LM_TAP] = 1;
+      }
+
       // gestion de l'index levé (LM)
       if((int)finger.type() == LM_INDEX && extendedFingers == 1 && nbHands == 1) {
         Bone::Type boneType = static_cast<Bone::Type>(LM_FDISTAL);
@@ -274,9 +287,12 @@ static void resize(int w, int h) {
 
 static void draw(void) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  
+
   if(_lmGestures[LM_ERASER])
     std::cout << "ERASER ON" << std::endl;
+
+  if(_lmGestures[LM_TAP])
+    std::cout << "TAP ON" << std::endl;
 
   if(_lmGestures[LM_OPTIONS])
     std::cout << "OPTIONS ON" << std::endl;
@@ -290,12 +306,8 @@ static void draw(void) {
   if(_lmGestures[LM_SWIP_DOWN])
     std::cout << "SWIP-DOWN ON " << std::endl;
 
-
-  // if(!_lmGestures[LM_INDEX])
-  //   return;
-
-  GLfloat red[] = {1, 0, 0, 1};
-          // white[] = {1, 1, 1, 1}, 
+  GLfloat red[] = {1, 0, 0, 1},
+          white[] = {1, 1, 1, 1};
           // yellow[] = {1, 1, 0, 1},
           // cyan[] = {0, 1, 1, 1}; 
 
@@ -304,13 +316,36 @@ static void draw(void) {
   gl4duLoadIdentityf();
   glUseProgram(_pId);
   gl4duTranslatef(
-    _hand[0].indexPosition[0] * 0.01,
-    _hand[0].indexPosition[1] * 0.01,
+    _hand[0].indexPosition[0] * 0.02,
+    _hand[0].indexPosition[1] * 0.02 - 3.0f,
     -10.0);
   gl4duSendMatrices();
   glUniform4fv(glGetUniformLocation(_pId, "color"), 1, red);
   gl4dgDraw(_sphere);
   gl4duPopMatrix();
+
+  if(!_lmGestures[LM_OPTIONS])
+    return;
+
+  std::cout << "OPTIONS ON" << std::endl;
+  gl4duTranslatef(
+    0,
+    0,
+    -10.0);
+  gl4duSendMatrices();
+  glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+  gl4dgDraw(_cube);
+  gl4duPopMatrix();
+
+  gl4duTranslatef(
+    -1.0f,
+    0,
+    -10.0);
+  gl4duSendMatrices();
+  glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+  gl4dgDraw(_cube);
+  gl4duPopMatrix();
+
 }
 
 
@@ -322,6 +357,7 @@ void init(void) {
   resize(_wW, _wH);
   _cylinder = gl4dgGenCylinderf(30, GL_TRUE);
   _sphere = gl4dgGenSpheref(30, 30);
+  _cube = gl4dgGenCubef();
 }
 
 int main(int argc, char** argv) {
