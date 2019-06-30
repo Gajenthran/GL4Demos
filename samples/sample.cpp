@@ -1,28 +1,8 @@
-/******************************************************************************\
-* Copyright (C) 2012-2014 Leap Motion, Inc. All rights reserved.               *
-* Leap Motion proprietary and confidential. Not for distribution.              *
-* Use subject to the terms of the Leap Motion SDK Agreement available at       *
-* https://developer.leapmotion.com/sdk_agreement, or another agreement         *
-* between Leap Motion and you, your company or other organization.             *
-\******************************************************************************/
-
-
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4duw_SDL2.h>
-#include <GL4D/gl4df.h>
-#include <GL4D/gl4dfBlurWeights.h>
-#include <SDL_image.h>
-#include <SDL_mixer.h>
-#include <GL4D/gl4dh.h>
 #include <iostream>
-#include <cstring>
 #include "Leap.h"
 
-/*
- * TODO:
- * Indiquer les mains (isLeft)
- * Boucle for inutile
- */
 using namespace Leap;
 
 static void init(void);
@@ -32,49 +12,48 @@ static void drawMobile(void);
 static void drawHand(void);
 static void quit(void);
 
-typedef struct hand hand_t;
-
-struct hand {
-  Vector palmPosition;
-  Vector indexPosition;
-  int extended[5];
-  Vector fingersPosition[5][4];
-};
-
-
+/*!\brief enumération des gestuelles */
 enum gesture_e {
-  LM_PEN = 0,
-  LM_SWIP_UP,
-  LM_SWIP_DOWN,
-  LM_ERASER,
-  LM_OPTIONS,
-  LM_TAP,
-  LM_GESTURES
+  LM_PEN = 0,     /* geste pour le stylo */
+  LM_SWIP_UP,     /* geste pour les deux mains vers le haut */
+  LM_SWIP_DOWN,   /* geste pour les deux mains vers le bas */
+  LM_ERASER,      /* geste pour la gomme */
+  LM_OPTIONS,     /* geste pour les options */
+  LM_TAP,         /* geste pour la selection des options */
+  LM_GESTURES     /* nombre de gestes */
 };
 
+/*!\brief enumération des doigts d'une main */
 enum finger_e {
-  LM_THUMB = 0,
-  LM_INDEX,
-  LM_MIDDLE,
-  LM_RING,
-  LM_PINKY,
-  LM_FINGERS
+  LM_THUMB = 0,   /* pouce */
+  LM_INDEX,       /* index */
+  LM_MIDDLE,      /* majeur */
+  LM_RING,        /* annulaire */
+  LM_PINKY,       /* auriculaire */
+  LM_FINGERS      /* nombre de doigts */
 };
 
+/*!\brief enumération des os sur chaque doigt */
 enum bones_e {
-  LM_FMETACARPAL,
-  LM_FPROXIMAL,
-  LM_FMIDDLE,
-  LM_FDISTAL,
-  LM_FBONES
+  LM_FMETACARPAL, /* métacarpe */
+  LM_FPROXIMAL,   /* phalange proximale */
+  LM_FMIDDLE,     /* phalange intermédiaire */
+  LM_FDISTAL,     /* phalange distale */
+  LM_FBONES       /* nombre d'os */
 };
 
+/*!\brief largeur et hauteur de la fenêtre */
 static int _wW = 1024, _wH = 768;
+/*!\brief identifiant du GLSL program */
 static GLuint _pId = 0;
-static hand_t _hand[2];
+/*!\brief identifiant de figures géométriques de GL4Dummies */
 static GLuint _cylinder = 0, _sphere = 0, _cube = 0;
+/*!\brief ensemble des gestuelles */
 static int _lmGestures[LM_GESTURES] = {0};
+/*!\brief informations concernant les deux mains */
 static Hand _hands[2];
+/*!\brief nombre de mains actives */
+static int _nbHands = 0;
 
 class lmListener : public Listener {
   public:
@@ -140,149 +119,15 @@ void lmListener::onServiceDisconnect(const Controller& controller) {
 }
 
 void lmListener::onFrame(const Controller& controller) {
-  for(int i = 0; i < LM_GESTURES; i++) {
-    _lmGestures[i] = 0;
-  }
-
-  for(int i = 0; i < LM_FINGERS; i++) {
-    _hand[0].extended[i] = 0;
-  }
-
-  // Get the most recent frame and report some basic information
   const Frame frame = controller.frame();
-  /* std::cout << "Frame id: " << frame.id()
-            << ", timestamp: " << frame.timestamp()
-            << ", hands: " << frame.hands().count()
-            << ", extended fingers: " << frame.fingers().extended().count()
-            << ", tools: " << frame.tools().count()
-            << ", gestures: " << frame.gestures().count() << std::endl; */
-
-  int nbHands = frame.hands().count();
+  _nbHands = frame.hands().count();
   HandList hands = frame.hands();
-
-  Vector lhandPalmPosition, lhandPalmNormal;
-
-  // TODO: boucle for à retirer !
-  for (HandList::const_iterator hl = hands.begin(); hl != hands.end(); ++hl) {
-    // Get the first hand
-    const Hand hand = _hands[0];
-    const Hand hand2 = _hands[1];
-
-    /* std::string handType = hand.isLeft() ? "Left hand" : "Right hand";
-    std::cout << std::string(2, ' ') << handType << ", id: " << hand.id()
-              << ", palm position: " << hand.palmPosition() << std::endl; */
-    
-    // Get the hand's normal vector and direction
-    // const Vector direction = hand.direction();
-
-    // Calculate the hand's pitch, roll, and yaw angles
-    /* std::cout << std::string(2, ' ') <<  "pitch: " << direction.pitch() * RAD_TO_DEG << " degrees, "
-              << "roll: " << normal.roll() * RAD_TO_DEG << " degrees, "
-              << "yaw: " << direction.yaw() * RAD_TO_DEG << " degrees" << std::endl; */
-
-    // Get the Arm bone
-    Arm arm = hand.arm();
-    /* std::cout << std::string(2, ' ') <<  "Arm direction: " << arm.direction()
-              << " wrist position: " << arm.wristPosition()
-              << " elbow position: " << arm.elbowPosition() << std::endl; */
-
-    // Get fingers
-    const FingerList fingers = hand.fingers().extended();
-    const FingerList fingers2 = hand2.fingers().extended();
-
-
-    int extendedFingers = fingers.count();
-    int extendedFingers2 = fingers2.count();
-
-    // gestion de la gomme en fermant la main (LM)
-    if(extendedFingers == 0 && nbHands == 1) {
-      _lmGestures[LM_ERASER] = 1;
-    } else {
-      _lmGestures[LM_ERASER] = 0;
-    }
-
-    if(extendedFingers != 1 || nbHands != 1) {
-      _lmGestures[LM_PEN] = 0;
-    }
-
-    int it = 0;
-    for (FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); ++fl, it++) {
-      const Finger finger = *fl;
-
-      // gestion d'options (LM)
-      if(!hand.isLeft() && hand.palmNormal()[2] > 0)
-        _lmGestures[LM_OPTIONS] = 1;
-
-      // std::cout << nbHands << std::endl;
-      for(int i = 0; i < extendedFingers2; i++) {
-        // gestion de sélection-options (LM)
-        if(_lmGestures[LM_OPTIONS] &&
-           hand2.isLeft() &&
-           extendedFingers2 == 1 &&
-           (int)fingers2[i].type() == LM_INDEX &&
-           hand2.palmVelocity()[2] > 100)
-          _lmGestures[LM_TAP] = 1;
-      }
-
-      // gestion de l'index levé (LM)
-      if((int)finger.type() == LM_INDEX && extendedFingers == 1 && nbHands == 1) {
-        Bone::Type boneType = static_cast<Bone::Type>(LM_FDISTAL);
-        Bone bone = finger.bone(boneType);
-        _hand[0].indexPosition = bone.nextJoint();
-        _lmGestures[LM_PEN] = 1;
-      } else {
-        _lmGestures[LM_PEN] = 0;
-      }
-
-      // gestion deux mains vers le haut (LM)
-      float thresholdY = 100.0f;
-      float diffY = fabs(hand.palmPosition()[1] - hand2.palmPosition()[1]);
-      float hPalmNormal = hand.palmNormal()[1], h2PalmNormal = hand2.palmNormal()[1];
-      float hPalmVelocity = hand.palmVelocity()[1], h2PalmVelocity = hand2.palmVelocity()[1];
-
-      if(diffY < thresholdY && 
-         hPalmNormal > 0 && 
-         h2PalmNormal > 0 && 
-         hPalmVelocity > 500.0 && 
-         h2PalmVelocity > 500.0) {
-        _lmGestures[LM_SWIP_UP] = 1;
-      } else if(diffY < thresholdY && 
-              hPalmNormal < 0 && 
-              h2PalmNormal < 0 &&
-              -hPalmVelocity > 500.0 && 
-              -h2PalmVelocity > 500.0) {
-        _lmGestures[LM_SWIP_DOWN] = 1;
-      } else {
-        _lmGestures[LM_SWIP_UP] = _lmGestures[LM_SWIP_DOWN] = 0;
-      }
-
-      /* std::cout << std::string(4, ' ') <<  fingerNames[finger.type()]
-                << " finger, id: " << finger.id()
-                << ", length: " << finger.length()
-                << "mm, width: " << finger.width() << std::endl; */
-
-      for(int b = 0; b < LM_FBONES; b++) {
-        Bone::Type boneType = static_cast<Bone::Type>(b);
-        Bone bone = finger.bone(boneType);
-        _hand[0].fingersPosition[it][b] = (bone.prevJoint() + bone.nextJoint()) * 0.5;
-        _hand[0].extended[it] = 1;
-      }
-
-      // Get finger bones
-      for (int b = 0; b < 4; ++b) {
-        Bone::Type boneType = static_cast<Bone::Type>(b);
-        Bone bone = finger.bone(boneType);
-        // _hand[0].fingersPosition[b] = bone.nextJoint();
-        /* std::cout << std::string(6, ' ') <<  boneNames[boneType]
-                  << " bone, start: " << bone.prevJoint()
-                  << ", end: " << bone.nextJoint()
-                  << ", direction: " << bone.direction() << std::endl; */
-      }
-    }
-  }
+  _hands[0] = hands[0];
+  _hands[1] = hands[1];
 }
 
-void init(void) {
+/*!\brief Initialise les paramètres OpenGL et les données */
+static void init(void) {
   glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
   _pId  = gl4duCreateProgram("<vs>shaders/basic.vs", "<fs>shaders/basic.fs", NULL);
   gl4duGenMatrix(GL_FLOAT, "modelViewMatrix");
@@ -293,7 +138,9 @@ void init(void) {
   _cube = gl4dgGenCubef();
 }
 
-
+/*!\brief Paramètre la vue (viewport) OpenGL en
+ * fonction des dimensions de la fenêtre.
+ */
 static void resize(int w, int h) {
   _wW  = w; _wH = h;
   glViewport(0, 0, _wW, _wH);
@@ -303,13 +150,71 @@ static void resize(int w, int h) {
   gl4duBindMatrix("modelViewMatrix");
 }
 
-
+/* !\brief Libère les éléments OpenGL utilisés */
 static void quit(void) {
   gl4duClean(GL4DU_ALL);
 }
 
+static void idle(void) {
+  for(int g = 0; g < LM_GESTURES; g++)
+    _lmGestures[g] = 0;
+
+  for(int i = 0; i < 2; i++) {
+    FingerList fingers = _hands[i].fingers().extended();
+
+    int nbExtendedFingers = fingers.count();
+
+    // gestion de la gomme en fermant la main (LM)
+    if(nbExtendedFingers == 0 && _nbHands == 1)
+      _lmGestures[LM_ERASER] = 1;
+
+    // gestion d'options (LM)
+    if(!_hands[0].isLeft() && _hands[0].palmNormal()[2] > 0)
+      _lmGestures[LM_OPTIONS] = 1;
+
+    for(int ef = 0; ef < nbExtendedFingers; ef++) {
+      // gestion de sélection-options (LM)
+      if(i == 1 &&
+         _lmGestures[LM_OPTIONS] &&
+         _hands[1].isLeft() &&
+         nbExtendedFingers == 1 &&
+         (int)fingers[i].type() == LM_INDEX &&
+         _hands[i].palmVelocity()[2] > 100)
+        _lmGestures[LM_TAP] = 1;
+    }
+
+    // gestion de l'index levé (LM)
+    if((int)fingers[i].type() == LM_INDEX && nbExtendedFingers == 1 && _nbHands == 1) {
+      Bone::Type boneType = static_cast<Bone::Type>(LM_FDISTAL);
+      Bone bone = fingers[i].bone(boneType);
+      _lmGestures[LM_PEN] = 1;
+    }
+  }
+
+  // gestion deux mains vers le haut (LM)
+  float thresholdY = 100.0f;
+  float diffY = fabs(_hands[0].palmPosition()[1] - _hands[1].palmPosition()[1]);
+  float hPalmNormal = _hands[0].palmNormal()[1], h2PalmNormal = _hands[1].palmNormal()[1];
+  float hPalmVelocity = _hands[0].palmVelocity()[1], h2PalmVelocity = _hands[1].palmVelocity()[1];
+
+  if(diffY < thresholdY && 
+     hPalmNormal > 0 && 
+     h2PalmNormal > 0 && 
+     hPalmVelocity > 500.0 && 
+     h2PalmVelocity > 500.0) {
+    _lmGestures[LM_SWIP_UP] = 1;
+  } else if(diffY < thresholdY && 
+          hPalmNormal < 0 && 
+          h2PalmNormal < 0 &&
+          -hPalmVelocity > 500.0 && 
+          -h2PalmVelocity > 500.0) {
+    _lmGestures[LM_SWIP_DOWN] = 1;
+  }
+}
+
+/*!\brief Dessine dans le contexte OpenGL actif. */
 static void draw(void) {
-  GLfloat red[] = {1, 0, 0, 1}, yellow[] = {1, 1, 0, 1};
+  GLfloat yellow[] = {1, 1, 0, 1};
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -344,6 +249,8 @@ static void draw(void) {
 
 }
   
+/*!\brief Dessine la sphère qui bougera en fonction du doigt
+ * (index) de l'utilisateur */
 static void drawMobile(void) {
   GLfloat red[] = {1, 0, 0, 1};
 
@@ -370,6 +277,9 @@ static void drawMobile(void) {
   }
 }
 
+/*!\brief Dessine les mains de l'utilisateur lorsqu'elles
+ * sont dans le champs de la Leap Motion et sont "levées" 
+ */
 static void drawHand(void) {
   GLfloat white[] = {1, 1, 1, 1};
 
@@ -417,6 +327,7 @@ int main(int argc, char** argv) {
   atexit(quit);
   gl4duwResizeFunc(resize);
   gl4duwDisplayFunc(draw);
+  gl4duwIdleFunc(idle);
   gl4duwMainLoop();
 
   controller.removeListener(listener);
