@@ -28,6 +28,8 @@ using namespace Leap;
 static void init(void);
 static void resize(int w, int h);
 static void draw(void);
+static void drawMobile(void);
+static void drawHand(void);
 static void quit(void);
 
 typedef struct hand hand_t;
@@ -35,6 +37,8 @@ typedef struct hand hand_t;
 struct hand {
   Vector palmPosition;
   Vector indexPosition;
+  int extended[5];
+  Vector fingersPosition[5][4];
 };
 
 
@@ -70,6 +74,7 @@ static GLuint _pId = 0;
 static hand_t _hand[2];
 static GLuint _cylinder = 0, _sphere = 0, _cube = 0;
 static int _lmGestures[LM_GESTURES] = {0};
+static Hand _hands[2];
 
 class lmListener : public Listener {
   public:
@@ -108,7 +113,6 @@ void lmListener::onExit(const Controller& controller) {
   std::cout << "Exited" << std::endl;
 }
 
-
 void lmListener::onFocusGained(const Controller& controller) {
   std::cout << "Focus Gained" << std::endl;
 }
@@ -135,10 +139,13 @@ void lmListener::onServiceDisconnect(const Controller& controller) {
   std::cout << "Service Disconnected" << std::endl;
 }
 
-
 void lmListener::onFrame(const Controller& controller) {
   for(int i = 0; i < LM_GESTURES; i++) {
     _lmGestures[i] = 0;
+  }
+
+  for(int i = 0; i < LM_FINGERS; i++) {
+    _hand[0].extended[i] = 0;
   }
 
   // Get the most recent frame and report some basic information
@@ -158,14 +165,8 @@ void lmListener::onFrame(const Controller& controller) {
   // TODO: boucle for à retirer !
   for (HandList::const_iterator hl = hands.begin(); hl != hands.end(); ++hl) {
     // Get the first hand
-    const Hand hand = hands[0];
-    const Hand hand2 = hands[1];
-  
-    // std::cout << hand.direction()[2] << std::endl;
-    // std::cout << hand.palmVelocity()[2] << std::endl;
-
-    _hand[0].palmPosition = hand.palmPosition();
-    _hand[1].palmPosition = hand2.palmPosition();
+    const Hand hand = _hands[0];
+    const Hand hand2 = _hands[1];
 
     /* std::string handType = hand.isLeft() ? "Left hand" : "Right hand";
     std::cout << std::string(2, ' ') << handType << ", id: " << hand.id()
@@ -204,7 +205,8 @@ void lmListener::onFrame(const Controller& controller) {
       _lmGestures[LM_PEN] = 0;
     }
 
-    for (FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); ++fl) {
+    int it = 0;
+    for (FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); ++fl, it++) {
       const Finger finger = *fl;
 
       // gestion d'options (LM)
@@ -259,10 +261,18 @@ void lmListener::onFrame(const Controller& controller) {
                 << ", length: " << finger.length()
                 << "mm, width: " << finger.width() << std::endl; */
 
+      for(int b = 0; b < LM_FBONES; b++) {
+        Bone::Type boneType = static_cast<Bone::Type>(b);
+        Bone bone = finger.bone(boneType);
+        _hand[0].fingersPosition[it][b] = (bone.prevJoint() + bone.nextJoint()) * 0.5;
+        _hand[0].extended[it] = 1;
+      }
+
       // Get finger bones
       for (int b = 0; b < 4; ++b) {
         Bone::Type boneType = static_cast<Bone::Type>(b);
         Bone bone = finger.bone(boneType);
+        // _hand[0].fingersPosition[b] = bone.nextJoint();
         /* std::cout << std::string(6, ' ') <<  boneNames[boneType]
                   << " bone, start: " << bone.prevJoint()
                   << ", end: " << bone.nextJoint()
@@ -271,83 +281,6 @@ void lmListener::onFrame(const Controller& controller) {
     }
   }
 }
-
-static void quit(void) {
-  gl4duClean(GL4DU_ALL);
-}
-
-static void resize(int w, int h) {
-  _wW  = w; _wH = h;
-  glViewport(0, 0, _wW, _wH);
-  gl4duBindMatrix("projectionMatrix");
-  gl4duLoadIdentityf();
-  gl4duFrustumf(-0.5, 0.5, -0.5 * _wH / _wW, 0.5 * _wH / _wW, 1.0, 1000.0);
-  gl4duBindMatrix("modelViewMatrix");
-}
-
-static void draw(void) {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  if(_lmGestures[LM_ERASER])
-    std::cout << "ERASER ON" << std::endl;
-
-  if(_lmGestures[LM_TAP])
-    std::cout << "TAP ON" << std::endl;
-
-  if(_lmGestures[LM_OPTIONS])
-    std::cout << "OPTIONS ON" << std::endl;
-
-  if(_lmGestures[LM_PEN])
-    std::cout << "INDEX ON" << std::endl;
-
-  if(_lmGestures[LM_SWIP_UP])
-    std::cout << "SWIP-UP ON " << std::endl;
-
-  if(_lmGestures[LM_SWIP_DOWN])
-    std::cout << "SWIP-DOWN ON " << std::endl;
-
-  GLfloat red[] = {1, 0, 0, 1},
-          white[] = {1, 1, 1, 1};
-          // yellow[] = {1, 1, 0, 1},
-          // cyan[] = {0, 1, 1, 1}; 
-
-
-  gl4duBindMatrix("modelViewMatrix");
-  gl4duLoadIdentityf();
-  glUseProgram(_pId);
-  gl4duTranslatef(
-    _hand[0].indexPosition[0] * 0.02,
-    _hand[0].indexPosition[1] * 0.02 - 3.0f,
-    -10.0);
-  gl4duSendMatrices();
-  glUniform4fv(glGetUniformLocation(_pId, "color"), 1, red);
-  gl4dgDraw(_sphere);
-  gl4duPopMatrix();
-
-  if(!_lmGestures[LM_OPTIONS])
-    return;
-
-  std::cout << "OPTIONS ON" << std::endl;
-  gl4duTranslatef(
-    0,
-    0,
-    -10.0);
-  gl4duSendMatrices();
-  glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
-  gl4dgDraw(_cube);
-  gl4duPopMatrix();
-
-  gl4duTranslatef(
-    -1.0f,
-    0,
-    -10.0);
-  gl4duSendMatrices();
-  glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
-  gl4dgDraw(_cube);
-  gl4duPopMatrix();
-
-}
-
 
 void init(void) {
   glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
@@ -358,6 +291,110 @@ void init(void) {
   _cylinder = gl4dgGenCylinderf(30, GL_TRUE);
   _sphere = gl4dgGenSpheref(30, 30);
   _cube = gl4dgGenCubef();
+}
+
+
+static void resize(int w, int h) {
+  _wW  = w; _wH = h;
+  glViewport(0, 0, _wW, _wH);
+  gl4duBindMatrix("projectionMatrix");
+  gl4duLoadIdentityf();
+  gl4duFrustumf(-0.5, 0.5, -0.5 * _wH / _wW, 0.5 * _wH / _wW, 1.0, 1000.0);
+  gl4duBindMatrix("modelViewMatrix");
+}
+
+
+static void quit(void) {
+  gl4duClean(GL4DU_ALL);
+}
+
+static void draw(void) {
+  GLfloat red[] = {1, 0, 0, 1}, yellow[] = {1, 1, 0, 1};
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  if(_lmGestures[LM_ERASER])
+    std::cout << "ERASER ON" << std::endl;
+  if(_lmGestures[LM_TAP])
+    std::cout << "TAP ON" << std::endl;
+  if(_lmGestures[LM_OPTIONS])
+    std::cout << "OPTIONS ON" << std::endl;
+  if(_lmGestures[LM_PEN])
+    std::cout << "INDEX ON" << std::endl;
+  if(_lmGestures[LM_SWIP_UP])
+    std::cout << "SWIP-UP ON " << std::endl;
+  if(_lmGestures[LM_SWIP_DOWN])
+    std::cout << "SWIP-DOWN ON " << std::endl;
+
+  gl4duBindMatrix("modelViewMatrix");
+  gl4duLoadIdentityf();
+  glUseProgram(_pId);
+
+  if(_lmGestures[LM_PEN])
+    drawMobile();
+  drawHand();
+  if(!_lmGestures[LM_OPTIONS])
+    return;
+
+  gl4duTranslatef(0, 0, -10.0);
+  gl4duSendMatrices();
+  glUniform4fv(glGetUniformLocation(_pId, "color"), 1, yellow);
+  gl4dgDraw(_cube);
+  gl4duPopMatrix();
+
+}
+  
+static void drawMobile(void) {
+  GLfloat red[] = {1, 0, 0, 1};
+
+  if(_hands[0].id() == -1)
+    return;
+
+  const FingerList fingers = _hands[0].fingers().extended();
+  for(int f = 0; f < LM_FINGERS; f++) {
+    if((int)fingers[f].type() == LM_INDEX) {
+      Bone::Type boneType = static_cast<Bone::Type>(LM_FDISTAL);
+      Bone bone = fingers[f].bone(boneType);
+      Vector indexPos = bone.nextJoint();
+
+      gl4duPushMatrix(); {
+        gl4duTranslatef(
+          indexPos[0] * 0.02,
+          indexPos[1] * 0.02 - 3.0f,
+          -10.0);
+        gl4duSendMatrices();
+        glUniform4fv(glGetUniformLocation(_pId, "color"), 1, red);
+        gl4dgDraw(_sphere);
+      } gl4duPopMatrix();
+    }
+  }
+}
+
+static void drawHand(void) {
+  GLfloat white[] = {1, 1, 1, 1};
+
+  for(int i = 0; i < 2; i++) {
+    if(_hands[i].id() == -1)
+      continue;
+    const FingerList fingers = _hands[i].fingers().extended();
+    for(int f = 0; f < LM_FINGERS; f++) {
+      for(int b = 0; b < LM_FBONES; b++) {
+        Bone::Type boneType = static_cast<Bone::Type>(b);
+        Bone bone = fingers[f].bone(boneType);
+        Vector boneCoord = (bone.prevJoint() + bone.nextJoint()) * 0.5;
+        gl4duPushMatrix(); {
+          gl4duTranslatef(
+            boneCoord[0] * 0.02,
+            boneCoord[1] * 0.02 - 3.0f,
+            -10.0);
+          gl4duScalef(0.1, 0.1, 0.1);
+          gl4duSendMatrices();
+          glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+          gl4dgDraw(_sphere);
+        } gl4duPopMatrix();
+      }
+    }
+  }
 }
 
 int main(int argc, char** argv) {
