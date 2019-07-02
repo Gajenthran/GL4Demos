@@ -3,13 +3,23 @@
 #include <iostream>
 #include "Leap.h"
 
+/* TODO
+ *  - Zoom (mode vue)
+ *  - gestuelles plus précises
+ */
+
+
 using namespace Leap;
 
 static void init(void);
 static void resize(int w, int h);
+static int  isInCircle(int x, int y, int xo, int yo, int rad);
+static void idle(void);
 static void draw(void);
 static void drawMobile(void);
+static void drawHandSkeleton(void);
 static void drawHand(void);
+static void drawOptions(void);
 static void quit(void);
 
 /*!\brief enumération des gestuelles */
@@ -20,6 +30,7 @@ enum gesture_e {
   LM_ERASER,      /* geste pour la gomme */
   LM_OPTIONS,     /* geste pour les options */
   LM_TAP,         /* geste pour la selection des options */
+  LM_ZOOM,         /* geste pour zoomer */
   LM_GESTURES     /* nombre de gestes */
 };
 
@@ -54,6 +65,8 @@ static int _lmGestures[LM_GESTURES] = {0};
 static Hand _hands[2];
 /*!\brief nombre de mains actives */
 static int _nbHands = 0;
+/*!\brief background color */
+static GLfloat _color[] = {0.1, 0.1, 0.1, 1.0};
 
 class lmListener : public Listener {
   public:
@@ -128,7 +141,7 @@ void lmListener::onFrame(const Controller& controller) {
 
 /*!\brief Initialise les paramètres OpenGL et les données */
 static void init(void) {
-  glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
+  glClearColor(_color[0], _color[1], _color[2], 0.0f);
   _pId  = gl4duCreateProgram("<vs>shaders/basic.vs", "<fs>shaders/basic.fs", NULL);
   gl4duGenMatrix(GL_FLOAT, "modelViewMatrix");
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
@@ -156,8 +169,10 @@ static void quit(void) {
 }
 
 static void idle(void) {
-  for(int g = 0; g < LM_GESTURES; g++)
+  for(int g = 0; g < LM_GESTURES; g++) {
+    _color[0] = 0.1f; _color[1] = 0.1f; _color[2] = 0.1f;
     _lmGestures[g] = 0;
+  }
 
   for(int i = 0; i < 2; i++) {
     FingerList fingers = _hands[i].fingers().extended();
@@ -165,11 +180,16 @@ static void idle(void) {
     int nbExtendedFingers = fingers.count();
 
     // gestion de la gomme en fermant la main (LM)
-    if(nbExtendedFingers == 0 && _nbHands == 1)
+    if(_hands[i].id() != -1 &&
+       nbExtendedFingers == 0 &&
+       _nbHands == 1)
       _lmGestures[LM_ERASER] = 1;
 
+    // std::cout << "direction: " << _hands[0].direction()[2] << std::endl;
     // gestion d'options (LM)
-    if(!_hands[0].isLeft() && _hands[0].palmNormal()[2] > 0)
+    if(!_hands[0].isLeft() && 
+       _hands[0].palmNormal()[2] > 0 && 
+       nbExtendedFingers == LM_FINGERS)
       _lmGestures[LM_OPTIONS] = 1;
 
     for(int ef = 0; ef < nbExtendedFingers; ef++) {
@@ -178,7 +198,7 @@ static void idle(void) {
          _lmGestures[LM_OPTIONS] &&
          _hands[1].isLeft() &&
          nbExtendedFingers == 1 &&
-         (int)fingers[i].type() == LM_INDEX &&
+         (int)fingers[ef].type() == LM_INDEX &&
          _hands[i].palmVelocity()[2] > 100)
         _lmGestures[LM_TAP] = 1;
     }
@@ -210,13 +230,63 @@ static void idle(void) {
           -h2PalmVelocity > 500.0) {
     _lmGestures[LM_SWIP_DOWN] = 1;
   }
+
+  int h = 0;
+  if(!_hands[h].isLeft())
+    h = 1;
+
+  FingerList fingers[2];
+  fingers[0] = _hands[h].fingers().extended();
+  fingers[1] = _hands[!h].fingers().extended();
+
+  // gestion pour zoomer
+  for(int f = 0; f < LM_FINGERS; f++) {
+    if(fingers[0].count() == 1 && 
+       fingers[1].count() == 1 &&
+       (int)fingers[0][f].type() == LM_INDEX &&
+       (int)fingers[1][f].type() == LM_INDEX) {
+      if(_hands[0].palmVelocity()[0] < 100.0 &&
+         _hands[0].palmVelocity()[1] > 100.0 &&
+         _hands[1].palmVelocity()[0] > 100.0 &&
+         _hands[1].palmVelocity()[1] < 100.0) {
+        _lmGestures[LM_ZOOM] = 1;
+      }
+    }
+  }
+
+  if(!_lmGestures[LM_OPTIONS])
+    return;
+
+  // gestion pour la selection des options 
+  for(int f = 0; f < LM_FINGERS; f++) {
+    if((int)fingers[0][f].type() == LM_INDEX) {
+      Bone::Type boneType = static_cast<Bone::Type>(LM_FDISTAL);
+      Bone bone = fingers[0][f].bone(boneType);
+      Vector indexPos = bone.nextJoint();
+
+      if(isInCircle(
+        _hands[0].palmPosition()[0] - 100.0f, _hands[0].palmPosition()[1] + 50.0f,
+        indexPos[0], indexPos[1],
+        10.0f)) {
+        _color[0] = 1; _color[1] = 1; _color[2] = 0; 
+      } else if(isInCircle(
+                _hands[0].palmPosition()[0] - 75.0f, _hands[0].palmPosition()[1],
+                indexPos[0], indexPos[1],
+                10.0f)) {
+        _color[0] = 0; _color[1] = 1; _color[2] = 0;
+      } else if(isInCircle(
+                _hands[0].palmPosition()[0] - 75.0f, _hands[0].palmPosition()[1] + 100.0f,
+                indexPos[0], indexPos[1],
+                10.0f)) {
+        _color[0] = 0; _color[1] = 1; _color[2] = 1;
+      }
+    }
+  }
 }
 
 /*!\brief Dessine dans le contexte OpenGL actif. */
 static void draw(void) {
-  GLfloat yellow[] = {1, 1, 0, 1};
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClearColor(_color[0], _color[1], _color[2], 1.0f);
 
   if(_lmGestures[LM_ERASER])
     std::cout << "ERASER ON" << std::endl;
@@ -224,31 +294,79 @@ static void draw(void) {
     std::cout << "TAP ON" << std::endl;
   if(_lmGestures[LM_OPTIONS])
     std::cout << "OPTIONS ON" << std::endl;
+  if(_lmGestures[LM_ZOOM])
+    std::cout << "ZOOM ON" << std::endl;
   if(_lmGestures[LM_PEN])
     std::cout << "INDEX ON" << std::endl;
-  if(_lmGestures[LM_SWIP_UP])
+  if(_lmGestures[LM_SWIP_UP]) {
     std::cout << "SWIP-UP ON " << std::endl;
-  if(_lmGestures[LM_SWIP_DOWN])
+    glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
+  }
+  if(_lmGestures[LM_SWIP_DOWN]) {
     std::cout << "SWIP-DOWN ON " << std::endl;
+    glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
 
+  }
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   gl4duBindMatrix("modelViewMatrix");
   gl4duLoadIdentityf();
   glUseProgram(_pId);
 
+  if(_lmGestures[LM_OPTIONS])
+    drawOptions();
   if(_lmGestures[LM_PEN])
     drawMobile();
-  drawHand();
-  if(!_lmGestures[LM_OPTIONS])
-    return;
-
-  gl4duTranslatef(0, 0, -10.0);
-  gl4duSendMatrices();
-  glUniform4fv(glGetUniformLocation(_pId, "color"), 1, yellow);
-  gl4dgDraw(_cube);
-  gl4duPopMatrix();
-
+  // drawHand();
+  drawHandSkeleton();
 }
   
+static void drawOptions(void) {
+  GLfloat green[] = {0, 1, 0, 1},
+          cyan[] = {0, 1, 1, 1},
+          yellow[] = {1, 1, 0, 1};
+
+  gl4duPushMatrix(); {
+    gl4duTranslatef(
+      (_hands[0].palmPosition()[0] - 75.0) * 0.02,
+      _hands[0].palmPosition()[1] * 0.02 - 3.0f,
+      -12.0);
+    gl4duScalef(0.25, 0.25, 0.25);
+    gl4duSendMatrices();
+    glUniform4fv(glGetUniformLocation(_pId, "color"), 1, green);
+    gl4dgDraw(_sphere);
+  } gl4duPopMatrix();
+
+  gl4duPushMatrix(); {
+    gl4duTranslatef(
+      (_hands[0].palmPosition()[0] - 100.0) * 0.02,
+      (_hands[0].palmPosition()[1] + 50.0f) * 0.02 - 3.0f,
+      -12.0);
+    gl4duScalef(0.25, 0.25, 0.25);
+    gl4duSendMatrices();
+    glUniform4fv(glGetUniformLocation(_pId, "color"), 1, yellow);
+    gl4dgDraw(_sphere);
+  } gl4duPopMatrix();
+
+  gl4duPushMatrix(); {
+    gl4duTranslatef(
+      (_hands[0].palmPosition()[0] - 75.0) * 0.02,
+      (_hands[0].palmPosition()[1] + 100.0f) * 0.02 - 3.0f,
+      -12.0);
+    gl4duScalef(0.25, 0.25, 0.25);
+    gl4duSendMatrices();
+    glUniform4fv(glGetUniformLocation(_pId, "color"), 1, cyan);
+    gl4dgDraw(_sphere);
+  } gl4duPopMatrix();
+}
+
+/*!\brief Vérifie si le point appartient au cercle */
+static int isInCircle(int x, int y, int xo, int yo, int rad) {
+  if(sqrt(((x - xo) * (x - xo)) + ((y - yo) * (y - yo))) < rad)
+    return 1;
+  return 0;
+}
+
 /*!\brief Dessine la sphère qui bougera en fonction du doigt
  * (index) de l'utilisateur */
 static void drawMobile(void) {
@@ -304,6 +422,149 @@ static void drawHand(void) {
         } gl4duPopMatrix();
       }
     }
+  }
+}
+
+/*!\brief Dessine les mains de l'utilisateur lorsqu'elles
+ * sont dans le champs de la Leap Motion et sont "levées" 
+ */
+static void drawHandSkeleton(void) {
+  GLfloat white[] = {1, 1, 1, 1};
+  float jointScale = 0.75f, boneScale = 0.5f, palmScale = 1.15f;
+
+  for(int i = 0; i < 2; i++) {
+    Vector palmPos = _hands[i].palmPosition();
+    Vector palmDir = _hands[i].direction();
+    Vector palmNorm = _hands[i].palmNormal();
+    Vector palmSide = palmDir.cross(palmNorm).normalized();
+
+    const float thumbDist = _hands[i].fingers()[Finger::TYPE_THUMB].bone(Bone::TYPE_METACARPAL).prevJoint().distanceTo(_hands[i].palmPosition());
+    const Vector wrist = palmPos - thumbDist * (palmDir*0.90f + (_hands[i].isLeft() ? -1.0f : 1.0f) * palmSide * 0.38f);
+
+    FingerList fingers = _hands[i].fingers();
+
+    float fingerRad = 0.0f;
+    Vector vCurBoxBase;
+    Vector vLastBoxBase = wrist;
+
+    for (int i = 0, ei = fingers.count(); i < ei; i++) {
+      const Finger& finger = fingers[i];
+      fingerRad = finger.width() * 0.5f;
+
+      // dessine chaque doigt de la main
+      for (int j = Bone::TYPE_METACARPAL; j <= Bone::TYPE_DISTAL; j++) {
+        const Bone& bone = finger.bone(static_cast<Bone::Type>(j));
+
+        if (j == Bone::TYPE_METACARPAL) {
+           vCurBoxBase = bone.nextJoint();
+        } else {
+          Vector boneCoord = (bone.prevJoint() + bone.nextJoint()) * 0.5;
+          gl4duPushMatrix(); {
+            gl4duTranslatef(
+              boneCoord[0] * 0.02,
+              boneCoord[1] * 0.02 - 3.0f,
+              -10.0);
+            gl4duScalef(
+            boneScale * fingerRad * 0.02,
+            boneScale * fingerRad * 0.02,
+            boneScale * fingerRad * 0.02);
+            gl4duSendMatrices();
+            glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+            gl4dgDraw(_cylinder);
+          } gl4duPopMatrix();
+
+          gl4duPushMatrix(); {
+            gl4duTranslatef(
+              bone.nextJoint()[0] * 0.02,
+              bone.nextJoint()[1] * 0.02 - 3.0f,
+              -10.0);
+            gl4duScalef(
+              jointScale * fingerRad * 0.02, 
+              jointScale * fingerRad * 0.02, 
+              jointScale * fingerRad * 0.02);
+            gl4duSendMatrices();
+            glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+            gl4dgDraw(_sphere);
+          } gl4duPopMatrix();
+        }
+      }
+
+      Vector vbox = (vCurBoxBase + vLastBoxBase) * 0.5;
+      gl4duPushMatrix(); {
+        gl4duTranslatef(
+          vbox[0] * 0.02,
+          vbox[1] * 0.02 - 3.0f,
+          -10.0);
+        gl4duScalef(
+          boneScale * fingerRad * 0.02,
+          boneScale * fingerRad * 0.02,
+          boneScale * fingerRad * 0.02);
+        gl4duSendMatrices();
+        glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+        gl4dgDraw(_cylinder);
+      } gl4duPopMatrix();
+
+      gl4duPushMatrix(); {
+        gl4duTranslatef(
+          vCurBoxBase[0] * 0.02,
+          vCurBoxBase[1] * 0.02 - 3.0f,
+          -10.0);
+        gl4duScalef(
+          jointScale * fingerRad * 0.02,
+          jointScale * fingerRad * 0.02,
+          jointScale * fingerRad * 0.02);
+        gl4duSendMatrices();
+        glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+        gl4dgDraw(_sphere);
+      } gl4duPopMatrix();
+      vLastBoxBase = vCurBoxBase;
+    }
+
+    Vector vbox = (vCurBoxBase + vLastBoxBase) * 0.5;
+    fingerRad = fingers[Finger::TYPE_THUMB].width() * 0.5f;
+    vCurBoxBase = wrist;
+    gl4duPushMatrix(); {
+      gl4duTranslatef(
+        vbox[0] * 0.02,
+        vbox[1] * 0.02 - 3.0f,
+        -10.0);
+      gl4duScalef(
+        boneScale * fingerRad * 0.02, 
+        boneScale * fingerRad * 0.02, 
+        boneScale * fingerRad * 0.02);
+      gl4duSendMatrices();
+      glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+      gl4dgDraw(_cylinder);
+    } gl4duPopMatrix();
+
+    gl4duPushMatrix(); {
+      gl4duTranslatef(
+        vCurBoxBase[0] * 0.02,
+        vCurBoxBase[1] * 0.02 - 3.0f,
+        -10.0);
+      gl4duScalef(
+        jointScale * fingerRad * 0.02,
+        jointScale * fingerRad * 0.02,
+        jointScale * fingerRad * 0.02);
+      gl4duSendMatrices();
+      glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+      gl4dgDraw(_sphere);
+    } gl4duPopMatrix();
+
+    // dessine paume de la main
+    gl4duPushMatrix(); {
+      gl4duTranslatef(
+        palmPos[0] * 0.02,
+        palmPos[1] * 0.02 - 3.0f,
+        -10.0);
+      gl4duScalef(
+        palmScale * fingerRad * 0.02,
+        palmScale * fingerRad * 0.02,
+        palmScale * fingerRad * 0.02);
+      gl4duSendMatrices();
+      glUniform4fv(glGetUniformLocation(_pId, "color"), 1, white);
+      gl4dgDraw(_sphere);
+    } gl4duPopMatrix();
   }
 }
 
